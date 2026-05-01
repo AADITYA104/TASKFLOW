@@ -40,6 +40,19 @@ button, a { cursor: pointer; }
 .auth-container { position: relative; z-index: 2; display: flex; width: 92%; max-width: 880px; min-height: 520px; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,.3); }
 .auth-left { flex: 1; background: #111113; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 40px; position: relative; }
 .auth-left-content { text-align: center; position: relative; z-index: 1; }
+
+/* 3D Wireframe Cube Animation */
+.scene-3d { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; perspective: 800px; z-index: 0; opacity: 0.15; pointer-events: none; }
+.cube { width: 300px; height: 300px; position: relative; transform-style: preserve-3d; animation: rotateCube 24s infinite linear; }
+.cube-face { position: absolute; width: 300px; height: 300px; border: 1px solid var(--accent); background: rgba(99, 102, 241, 0.02); backdrop-filter: blur(2px); }
+.cube-face.front  { transform: rotateY(0deg) translateZ(150px); }
+.cube-face.back   { transform: rotateY(180deg) translateZ(150px); }
+.cube-face.left   { transform: rotateY(-90deg) translateZ(150px); }
+.cube-face.right  { transform: rotateY(90deg) translateZ(150px); }
+.cube-face.top    { transform: rotateX(90deg) translateZ(150px); }
+.cube-face.bottom { transform: rotateX(-90deg) translateZ(150px); }
+@keyframes rotateCube { 0% { transform: rotateX(0deg) rotateY(0deg); } 100% { transform: rotateX(360deg) rotateY(360deg); } }
+
 .auth-logo-mark { width: 48px; height: 48px; background: var(--accent); border-radius: 12px; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; margin-bottom: 28px; }
 .auth-hero-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 10px; color: #fff; }
 .auth-hero-sub { color: #71717a; font-size: 1rem; line-height: 1.6; margin-bottom: 36px; }
