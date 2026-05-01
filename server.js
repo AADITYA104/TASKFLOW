@@ -221,6 +221,7 @@ app.post('/api/tasks', auth, async (req, res) => {
 app.put('/api/tasks/:id', auth, async (req, res) => {
   try {
     const t = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!t) return res.status(404).json({ msg: 'Task not found' });
     await logActivity('task_updated', `Task updated: ${t.title} (Status: ${req.body.status || 'changed'})`, req.user.name);
     io.emit('dataChanged', { type: 'task' });
     res.json(t);

@@ -175,7 +175,7 @@
             <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.65rem; color: var(--text-tertiary); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-subtle); pointer-events: none;">⌘K</span>
           </div>
-          <button type="button" class="btn-primary small" id="quickAddBtn">+ New Task</button>
+          <button type="button" class="btn-primary small" id="quickAddBtn" onclick="openTaskModal()">+ New Task</button>
           <div class="notification-btn">
             <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
             <span class="notif-dot"></span>
@@ -255,7 +255,6 @@
             <button class="filter-btn" onclick="filterTasks('in-progress', this)">In Progress</button>
             <button class="filter-btn" onclick="filterTasks('done', this)">Done</button>
           </div>
-          <button type="button" class="btn-primary" onclick="openTaskModal()">+ New Task</button>
         </div>
         <div class="kanban-board" id="kanbanBoard">
           <div class="kanban-col" data-col="todo">
@@ -277,7 +276,7 @@
       <div class="page hidden" id="page-team">
         <div class="page-actions">
           <h2 class="section-title">Team Members</h2>
-          <button type="button" class="btn-primary" onclick="openInviteModal()">+ Invite Member</button>
+          <button type="button" class="btn-primary admin-only" onclick="openInviteModal()">+ Invite Member</button>
         </div>
         <div class="team-grid" id="teamGrid"></div>
       </div>

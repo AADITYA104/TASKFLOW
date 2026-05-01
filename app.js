@@ -57,6 +57,7 @@ async function refreshData() {
     renderDashboard();
     renderKanban();
     renderTasks();
+    renderProjects();
     if (state.user.role === 'admin') { renderTeam(); renderAnalytics(); }
     updateBadges();
   } catch (e) { console.error('Refresh error', e); }
@@ -159,7 +160,11 @@ async function apiCall(ep, method='GET', body=null) {
   const opts = { method, headers: h };
   if (body) opts.body = JSON.stringify(body);
   const res = await fetch(`${ep.startsWith('/api') ? ep : API + ep}`, opts);
-  if (!res.ok) { const e = await res.json(); throw new Error(e.msg || 'API Error'); }
+  if (!res.ok) { 
+    if (res.status === 401) logout();
+    const e = await res.json(); 
+    throw new Error(e.msg || 'API Error'); 
+  }
   return res.json();
 }
 
@@ -242,10 +247,10 @@ function updateBadges() {
 }
 
 function renderDashboard() {
-  document.getElementById('stat-projects').textContent = state.projects.length;
-  document.getElementById('stat-tasks').textContent = state.tasks.length;
-  document.getElementById('stat-team').textContent = state.team.length || 1;
-  document.getElementById('stat-due').textContent = state.tasks.filter(t => t.status !== 'done').length;
+  if (document.getElementById('totalProjects')) document.getElementById('totalProjects').textContent = state.projects.length;
+  if (document.getElementById('totalTasks')) document.getElementById('totalTasks').textContent = state.tasks.length;
+  if (document.getElementById('completedTasks')) document.getElementById('completedTasks').textContent = state.tasks.filter(t => t.status === 'done').length;
+  if (document.getElementById('overdueTasks')) document.getElementById('overdueTasks').textContent = state.tasks.filter(t => t.status !== 'done').length;
 
   const recent = [...state.tasks].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
   const list = document.getElementById('recentTasksList');
@@ -260,6 +265,38 @@ function renderDashboard() {
         </div>
       </div>
       <div class="t-status" style="border-color:${getStatusColor(t.status)}; color:${getStatusColor(t.status)}">${t.status}</div>
+    </div>
+  `).join('');
+
+  // Status Chart
+  const ctxStatus = document.getElementById('statusChart');
+  if (ctxStatus) {
+    const counts = { todo: 0, 'in-progress': 0, done: 0 };
+    state.tasks.forEach(t => counts[t.status]++);
+    if (window.statusChartInstance) window.statusChartInstance.destroy();
+    window.statusChartInstance = new Chart(ctxStatus, {
+      type: 'doughnut',
+      data: {
+        labels: ['To Do', 'In Progress', 'Done'],
+        datasets: [{ data: [counts.todo, counts['in-progress'], counts.done], backgroundColor: ['#71717a', '#3b82f6', '#10b981'], borderWidth: 0 }]
+      },
+      options: { cutout: '70%', plugins: { legend: { display: false } } }
+    });
+  }
+}
+
+function renderProjects() {
+  const grid = document.getElementById('projectsGrid');
+  if (!grid) return;
+  if (state.projects.length === 0) { grid.innerHTML = '<div class="empty-state">No projects found.</div>'; return; }
+  grid.innerHTML = state.projects.map(p => `
+    <div class="dash-card project-card" style="border-top: 4px solid ${p.color}">
+      <h3>${p.name}</h3>
+      <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom: 12px;">${p.desc}</p>
+      <div style="font-size: 0.8rem; color:var(--text-tertiary);">Due: ${p.due || 'No date'}</div>
+      <div style="margin-top: 12px; display:flex; gap: 8px;">
+        <button class="btn-ghost small" onclick="deleteProject('${p._id}')" style="color:var(--status-overdue); border-color:var(--status-overdue); padding: 4px 8px;">Delete</button>
+      </div>
     </div>
   `).join('');
 }
@@ -337,13 +374,25 @@ function renderAnalytics() {
     },
     options: { cutout: '70%', plugins: { legend: { display: false } } }
   });
+
+  const teamList = document.getElementById('teamPerfList');
+  if (teamList) {
+    teamList.innerHTML = state.team.map(u => {
+      const userTasks = state.tasks.filter(t => t.assignee && t.assignee._id === u._id);
+      const done = userTasks.filter(t => t.status === 'done').length;
+      return `<div style="display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid var(--border-subtle); padding-bottom:10px;">
+        <span>${u.name}</span>
+        <span style="color:var(--text-tertiary);">${done} / ${userTasks.length} Done</span>
+      </div>`;
+    }).join('');
+  }
 }
 
 // Modal Handlers
 function openTaskModal(task = null) {
   const m = document.getElementById('taskModalOverlay');
   const title = document.getElementById('taskModalTitle');
-  const pid = document.getElementById('taskProj');
+  const pid = document.getElementById('taskProject');
   const uid = document.getElementById('taskAssignee');
   
   pid.innerHTML = state.projects.map(p => `<option value="${p._id}">${p.name}</option>`).join('');
@@ -354,7 +403,7 @@ function openTaskModal(task = null) {
     document.getElementById('taskModalId').value = task._id;
     document.getElementById('taskTitle').value = task.title;
     document.getElementById('taskDesc').value = task.desc || '';
-    document.getElementById('taskProj').value = task.projectId?._id || '';
+    document.getElementById('taskProject').value = task.projectId?._id || '';
     document.getElementById('taskAssignee').value = task.assignee?._id || '';
     document.getElementById('taskPriority').value = task.priority;
     document.getElementById('taskStatus').value = task.status;
@@ -362,7 +411,11 @@ function openTaskModal(task = null) {
     document.getElementById('deleteTaskBtn').classList.remove('hidden');
   } else {
     title.textContent = 'New Task';
-    document.getElementById('taskForm').reset();
+    document.getElementById('taskTitle').value = '';
+    document.getElementById('taskDesc').value = '';
+    document.getElementById('taskProject').value = '';
+    document.getElementById('taskAssignee').value = '';
+    document.getElementById('taskDue').value = '';
     document.getElementById('taskModalId').value = '';
     document.getElementById('deleteTaskBtn').classList.add('hidden');
   }
@@ -374,7 +427,7 @@ async function saveTask() {
   const data = {
     title: document.getElementById('taskTitle').value,
     desc: document.getElementById('taskDesc').value,
-    projectId: document.getElementById('taskProj').value,
+    projectId: document.getElementById('taskProject').value,
     assignee: document.getElementById('taskAssignee').value,
     priority: document.getElementById('taskPriority').value,
     status: document.getElementById('taskStatus').value,
@@ -413,16 +466,19 @@ function triggerTaskGlow(id) {
 }
 
 function openProjectModal() {
-  document.getElementById('projectForm').reset();
+  document.getElementById('projectName').value = '';
+  document.getElementById('projectDesc').value = '';
+  document.getElementById('projectColor').value = '#7c3aed';
+  document.getElementById('projectDue').value = '';
   document.getElementById('projectModalOverlay').classList.remove('hidden');
 }
 
 async function saveProject() {
   const data = {
-    name: document.getElementById('projName').value,
-    desc: document.getElementById('projDesc').value,
-    color: document.getElementById('projColor').value,
-    due: document.getElementById('projDue').value
+    name: document.getElementById('projectName').value,
+    desc: document.getElementById('projectDesc').value,
+    color: document.getElementById('projectColor').value,
+    due: document.getElementById('projectDue').value
   };
   try {
     await apiCall('/projects', 'POST', data);
@@ -433,6 +489,37 @@ async function saveProject() {
 }
 
 function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+async function deleteProject(id) {
+  if (!confirm('Delete this project?')) return;
+  try {
+    await apiCall(`/projects/${id}`, 'DELETE');
+    refreshData();
+    showToast('Project deleted');
+  } catch (e) { showToast(e.message, true); }
+}
+
+function openInviteModal() {
+  document.getElementById('inviteName').value = '';
+  document.getElementById('inviteEmail').value = '';
+  document.getElementById('invitePassword').value = 'Welcome123';
+  document.getElementById('inviteRole').value = 'member';
+  document.getElementById('inviteModalOverlay').classList.remove('hidden');
+}
+
+async function sendInvite() {
+  const name = document.getElementById('inviteName').value;
+  const email = document.getElementById('inviteEmail').value;
+  const password = document.getElementById('invitePassword').value;
+  const role = document.getElementById('inviteRole').value;
+  if(!name || !email) { showToast('Name and email required', true); return; }
+  try {
+    await apiCall('/auth/register', 'POST', { name, email, password, role });
+    showToast('Invite sent to ' + email);
+    closeModal('inviteModalOverlay');
+    refreshData();
+  } catch (e) { showToast(e.message, true); }
+}
 
 // Drag & Drop
 function dragTask(e, id) { e.dataTransfer.setData('text', id); }
