@@ -8,125 +8,124 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-  <!-- CURSOR -->
-  <div class="custom-cursor" id="cursor"></div>
-  <div class="custom-cursor-follower" id="cursorFollower"></div>
-
-  <!-- NOISE OVERLAY -->
-  <div class="noise-overlay"></div>
-
-  <!-- Modals and Overlays -->
+  <!-- AUTH OVERLAY -->
   <div class="auth-overlay" id="authOverlay">
-    <canvas id="bgCanvas" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:-1;"></canvas>
-    <div class="auth-modal" id="authModal">
-      <div class="auth-brand">
-        <div class="auth-logo">TF</div>
-        <h2>TaskFlow</h2>
+    <canvas id="bgCanvas"></canvas>
+    <div class="auth-container">
+      <div class="auth-left">
+        <div class="auth-brand-big">
+          <div class="auth-logo-3d">TF</div>
+          <h1>TaskFlow</h1>
+          <p>Manage your team's projects, tasks, and progress with a beautiful interface and role-based access.</p>
+        </div>
+        <div class="auth-features">
+          <div class="auth-feature"><span class="af-icon">📊</span><span>Real-time Dashboard</span></div>
+          <div class="auth-feature"><span class="af-icon">🎯</span><span>Kanban Task Board</span></div>
+          <div class="auth-feature"><span class="af-icon">👥</span><span>Team Collaboration</span></div>
+          <div class="auth-feature"><span class="af-icon">🔐</span><span>Role-Based Access</span></div>
+        </div>
       </div>
+      <div class="auth-right">
+        <div class="auth-card" id="authCard">
+          <!-- LOGIN -->
+          <div class="auth-form" id="loginForm">
+            <h2 class="auth-title">Welcome Back</h2>
+            <p class="auth-subtitle">Sign in to your workspace</p>
+            <div class="form-group">
+              <label for="loginEmail">Email</label>
+              <input type="email" id="loginEmail" placeholder="you@company.com" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="loginPassword">Password</label>
+              <input type="password" id="loginPassword" placeholder="Enter your password" class="form-input" />
+            </div>
+            <div class="form-error" id="loginError"></div>
+            <button type="button" class="btn-primary full-width" id="loginBtn" onclick="handleLogin()">
+              Sign In →
+            </button>
+            <p class="auth-switch">Don't have an account? <a href="#" onclick="switchToRegister(); return false;">Create one</a></p>
+            <div class="demo-accounts">
+              <p class="demo-heading">Quick Demo Access</p>
+              <div class="demo-btn-group">
+                <button type="button" class="demo-btn" onclick="fillDemo('admin@taskflow.io','admin123')">
+                  <span class="demo-emoji">👑</span>
+                  <span class="demo-label">Admin</span>
+                </button>
+                <button type="button" class="demo-btn" onclick="fillDemo('member@taskflow.io','member123')">
+                  <span class="demo-emoji">👤</span>
+                  <span class="demo-label">Member</span>
+                </button>
+              </div>
+            </div>
+          </div>
 
-      <div class="auth-form" id="loginForm">
-        <h3 class="auth-title">Welcome back</h3>
-        <p class="auth-subtitle">Sign in to your workspace</p>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="loginEmail" placeholder="you@company.com" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="loginPassword" placeholder="••••••••" class="form-input" />
-        </div>
-        <div class="form-error" id="loginError"></div>
-        <button class="btn-primary full-width" id="loginBtn" onclick="handleLogin()">
-          <span>Sign In</span>
-          <div class="btn-ripple"></div>
-        </button>
-        <p class="auth-switch">No account? <a href="#" onclick="switchToRegister()">Create one</a></p>
-        <div class="demo-accounts">
-          <p>Quick Login — Demo Accounts</p>
-          <div class="demo-btn-group">
-            <button type="button" onclick="fillDemo('admin@taskflow.io','admin123')" class="demo-btn">
-              <span class="demo-icon">👑</span>
-              <span class="demo-label">Admin Login</span>
-              <span class="demo-cred">admin@taskflow.io</span>
+          <!-- REGISTER -->
+          <div class="auth-form hidden" id="registerForm">
+            <h2 class="auth-title">Create Account</h2>
+            <p class="auth-subtitle">Join your team on TaskFlow</p>
+            <div class="form-group">
+              <label for="regName">Full Name</label>
+              <input type="text" id="regName" placeholder="John Doe" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="regEmail">Email</label>
+              <input type="email" id="regEmail" placeholder="you@company.com" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="regPassword">Password</label>
+              <input type="password" id="regPassword" placeholder="Min. 6 characters" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="regRole">Role</label>
+              <select id="regRole" class="form-input">
+                <option value="member">Member</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div class="form-error" id="regError"></div>
+            <button type="button" class="btn-primary full-width" onclick="handleRegister()">
+              Create Account →
             </button>
-            <button type="button" onclick="fillDemo('member@taskflow.io','member123')" class="demo-btn">
-              <span class="demo-icon">👤</span>
-              <span class="demo-label">Member Login</span>
-              <span class="demo-cred">member@taskflow.io</span>
-            </button>
+            <p class="auth-switch">Already have an account? <a href="#" onclick="switchToLogin(); return false;">Sign in</a></p>
           </div>
         </div>
-      </div>
-
-      <div class="auth-form hidden" id="registerForm">
-        <h3 class="auth-title">Create account</h3>
-        <p class="auth-subtitle">Join your team on TaskFlow</p>
-        <div class="form-group">
-          <label>Full Name</label>
-          <input type="text" id="regName" placeholder="John Doe" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="regEmail" placeholder="you@company.com" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" id="regPassword" placeholder="••••••••" class="form-input" />
-        </div>
-        <div class="form-group">
-          <label>Role</label>
-          <select id="regRole" class="form-input">
-            <option value="member">Member</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <div class="form-error" id="regError"></div>
-        <button class="btn-primary full-width" onclick="handleRegister()">
-          <span>Create Account</span>
-          <div class="btn-ripple"></div>
-        </button>
-        <p class="auth-switch">Have an account? <a href="#" onclick="switchToLogin()">Sign in</a></p>
       </div>
     </div>
   </div>
 
+  <!-- MAIN APP -->
   <div class="app hidden" id="app">
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="logo-mark">TF</div>
         <span class="logo-text">TaskFlow</span>
-        <button class="sidebar-toggle" id="sidebarToggle">
-          <span></span><span></span><span></span>
-        </button>
       </div>
 
       <nav class="sidebar-nav">
-        <a href="#" class="nav-item active" data-page="dashboard" onclick="navigate('dashboard', this)">
+        <a href="#" class="nav-item active" data-page="dashboard" onclick="navigate('dashboard', this); return false;">
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           <span>Dashboard</span>
         </a>
-        <a href="#" class="nav-item admin-only hidden" data-page="projects" onclick="navigate('projects', this)">
+        <a href="#" class="nav-item admin-only hidden" data-page="projects" onclick="navigate('projects', this); return false;">
           <svg viewBox="0 0 24 24"><path d="M2 6a2 2 0 012-2h5l2 2h9a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
           <span>Projects</span>
           <span class="nav-badge" id="projectsBadge">0</span>
         </a>
-        <a href="#" class="nav-item" data-page="tasks" onclick="navigate('tasks', this)">
+        <a href="#" class="nav-item" data-page="tasks" onclick="navigate('tasks', this); return false;">
           <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
           <span>My Tasks</span>
           <span class="nav-badge accent" id="tasksBadge">0</span>
         </a>
-        <a href="#" class="nav-item admin-only hidden" data-page="team" onclick="navigate('team', this)">
+        <a href="#" class="nav-item admin-only hidden" data-page="team" onclick="navigate('team', this); return false;">
           <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
           <span>Team</span>
         </a>
-        <a href="#" class="nav-item admin-only hidden" data-page="analytics" onclick="navigate('analytics', this)">
+        <a href="#" class="nav-item admin-only hidden" data-page="analytics" onclick="navigate('analytics', this); return false;">
           <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span>Analytics</span>
         </a>
@@ -135,8 +134,8 @@
       <div class="sidebar-footer">
         <div class="theme-toggle-wrap">
           <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
-            <span class="theme-icon sun">☀️</span>
-            <span class="theme-icon moon">🌙</span>
+            <span class="theme-icon">☀️</span>
+            <span class="theme-icon">🌙</span>
             <div class="toggle-thumb"></div>
           </button>
         </div>
@@ -164,7 +163,7 @@
             <input type="text" placeholder="Search tasks..." class="search-input" id="globalSearch" oninput="handleSearch(this.value)" />
             <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           </div>
-          <button class="btn-primary small" id="quickAddBtn">+ New Task</button>
+          <button type="button" class="btn-primary small" id="quickAddBtn">+ New Task</button>
           <div class="notification-btn">
             <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
             <span class="notif-dot"></span>
@@ -172,6 +171,7 @@
         </div>
       </header>
 
+      <!-- DASHBOARD -->
       <div class="page active" id="page-dashboard">
         <div class="stats-grid" id="statsGrid">
           <div class="stat-card admin-only hidden" data-index="0">
@@ -180,7 +180,6 @@
               <div class="stat-value" id="totalProjects">0</div>
               <div class="stat-label">Total Projects</div>
             </div>
-            <div class="stat-sparkline"></div>
           </div>
           <div class="stat-card" data-index="1">
             <div class="stat-icon blue"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
@@ -206,48 +205,45 @@
         </div>
 
         <div class="dashboard-grid">
-          <div class="dash-card recent-tasks-card">
+          <div class="dash-card">
             <div class="card-header">
               <h2>Recent Tasks</h2>
-              <a href="#" onclick="navigate('tasks', null)" class="view-all">View all →</a>
+              <a href="#" onclick="navigate('tasks', null); return false;" class="view-all">View all →</a>
             </div>
             <div class="task-list" id="recentTasksList"></div>
           </div>
-
-          <div class="dash-card progress-card">
-            <div class="card-header"><h2>Project Progress</h2></div>
-            <div class="progress-list" id="progressList"></div>
+          <div class="dash-card">
+            <div class="card-header"><h2>Task Status</h2></div>
+            <div style="height:280px; display:flex; justify-content:center; align-items:center;">
+              <canvas id="statusChart"></canvas>
+            </div>
           </div>
-        </div>
-
-        <div class="dash-card activity-card">
-          <div class="card-header"><h2>Activity Timeline</h2></div>
-          <div class="activity-feed" id="activityFeed"></div>
         </div>
       </div>
 
+      <!-- PROJECTS -->
       <div class="page hidden" id="page-projects">
         <div class="page-actions">
           <div class="filter-row">
-            <button class="filter-btn active" data-filter="all" onclick="filterProjects('all', this)">All</button>
-            <button class="filter-btn" data-filter="active" onclick="filterProjects('active', this)">Active</button>
-            <button class="filter-btn" data-filter="completed" onclick="filterProjects('completed', this)">Completed</button>
+            <button class="filter-btn active" onclick="filterProjects('all', this)">All</button>
+            <button class="filter-btn" onclick="filterProjects('active', this)">Active</button>
+            <button class="filter-btn" onclick="filterProjects('completed', this)">Completed</button>
           </div>
-          <button class="btn-primary admin-only" id="newProjectBtn" onclick="openProjectModal()">+ New Project</button>
+          <button type="button" class="btn-primary admin-only" id="newProjectBtn" onclick="openProjectModal()">+ New Project</button>
         </div>
         <div class="projects-grid" id="projectsGrid"></div>
       </div>
 
+      <!-- TASKS (KANBAN) -->
       <div class="page hidden" id="page-tasks">
         <div class="page-actions">
           <div class="filter-row">
-            <button class="filter-btn active" data-status="all" onclick="filterTasks('all', this)">All</button>
-            <button class="filter-btn" data-status="todo" onclick="filterTasks('todo', this)">To Do</button>
-            <button class="filter-btn" data-status="in-progress" onclick="filterTasks('in-progress', this)">In Progress</button>
-            <button class="filter-btn" data-status="done" onclick="filterTasks('done', this)">Done</button>
-            <button class="filter-btn" data-status="overdue" onclick="filterTasks('overdue', this)">⚠ Overdue</button>
+            <button class="filter-btn active" onclick="filterTasks('all', this)">All</button>
+            <button class="filter-btn" onclick="filterTasks('todo', this)">To Do</button>
+            <button class="filter-btn" onclick="filterTasks('in-progress', this)">In Progress</button>
+            <button class="filter-btn" onclick="filterTasks('done', this)">Done</button>
           </div>
-          <button class="btn-primary" onclick="openTaskModal()">+ New Task</button>
+          <button type="button" class="btn-primary" onclick="openTaskModal()">+ New Task</button>
         </div>
         <div class="kanban-board" id="kanbanBoard">
           <div class="kanban-col" data-col="todo">
@@ -265,27 +261,25 @@
         </div>
       </div>
 
+      <!-- TEAM -->
       <div class="page hidden" id="page-team">
         <div class="page-actions">
           <h2 class="section-title">Team Members</h2>
-          <button class="btn-primary" onclick="openInviteModal()">+ Invite Member</button>
+          <button type="button" class="btn-primary" onclick="openInviteModal()">+ Invite Member</button>
         </div>
         <div class="team-grid" id="teamGrid"></div>
       </div>
 
+      <!-- ANALYTICS -->
       <div class="page hidden" id="page-analytics">
         <div class="analytics-grid">
           <div class="dash-card">
-            <div class="card-header"><h2>Task Status Breakdown</h2></div>
-            <div class="donut-chart-wrap" style="height: 300px; display: flex; justify-content: center; align-items: center;">
-              <canvas id="statusChart"></canvas>
+            <div class="card-header"><h2>Task Breakdown</h2></div>
+            <div style="height:300px; display:flex; justify-content:center; align-items:center;">
+              <canvas id="analyticsChart"></canvas>
             </div>
           </div>
           <div class="dash-card">
-            <div class="card-header"><h2>Completion Rate</h2></div>
-            <div class="bar-chart" id="barChart"></div>
-          </div>
-          <div class="dash-card wide">
             <div class="card-header"><h2>Team Performance</h2></div>
             <div class="team-perf-list" id="teamPerfList"></div>
           </div>
@@ -294,11 +288,12 @@
     </main>
   </div>
 
+  <!-- TASK MODAL -->
   <div class="modal-overlay hidden" id="taskModalOverlay">
-    <div class="modal" id="taskModal">
+    <div class="modal">
       <div class="modal-header">
         <h3 id="taskModalTitle">New Task</h3>
-        <button class="modal-close" onclick="closeModal('taskModalOverlay')">✕</button>
+        <button type="button" class="modal-close" onclick="closeModal('taskModalOverlay')">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="taskModalId" />
@@ -344,20 +339,20 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-ghost" onclick="closeModal('taskModalOverlay')">Cancel</button>
-        <button class="btn-primary" onclick="saveTask()">Save Task</button>
+        <button type="button" class="btn-ghost" onclick="closeModal('taskModalOverlay')">Cancel</button>
+        <button type="button" class="btn-primary" onclick="saveTask()">Save Task</button>
       </div>
     </div>
   </div>
 
+  <!-- PROJECT MODAL -->
   <div class="modal-overlay hidden" id="projectModalOverlay">
-    <div class="modal" id="projectModal">
+    <div class="modal">
       <div class="modal-header">
         <h3>New Project</h3>
-        <button class="modal-close" onclick="closeModal('projectModalOverlay')">✕</button>
+        <button type="button" class="modal-close" onclick="closeModal('projectModalOverlay')">✕</button>
       </div>
       <div class="modal-body">
-        <input type="hidden" id="projectModalId" />
         <div class="form-group">
           <label>Project Name *</label>
           <input type="text" id="projectName" class="form-input" placeholder="e.g. Website Redesign" />
@@ -378,17 +373,18 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-ghost" onclick="closeModal('projectModalOverlay')">Cancel</button>
-        <button class="btn-primary" onclick="saveProject()">Create Project</button>
+        <button type="button" class="btn-ghost" onclick="closeModal('projectModalOverlay')">Cancel</button>
+        <button type="button" class="btn-primary" onclick="saveProject()">Create Project</button>
       </div>
     </div>
   </div>
 
+  <!-- INVITE MODAL -->
   <div class="modal-overlay hidden" id="inviteModalOverlay">
-    <div class="modal" id="inviteModal">
+    <div class="modal">
       <div class="modal-header">
         <h3>Invite Team Member</h3>
-        <button class="modal-close" onclick="closeModal('inviteModalOverlay')">✕</button>
+        <button type="button" class="modal-close" onclick="closeModal('inviteModalOverlay')">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -414,28 +410,15 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-ghost" onclick="closeModal('inviteModalOverlay')">Cancel</button>
-        <button class="btn-primary" onclick="sendInvite()">Send Invite</button>
+        <button type="button" class="btn-ghost" onclick="closeModal('inviteModalOverlay')">Cancel</button>
+        <button type="button" class="btn-primary" onclick="sendInvite()">Send Invite</button>
       </div>
-    </div>
-  </div>
-
-  <div class="side-panel-overlay hidden" id="sidePanelOverlay" onclick="closeSidePanel()"></div>
-  <div class="side-panel hidden" id="sidePanel">
-    <div class="side-panel-header">
-      <h3 id="panelTaskTitle">Task Detail</h3>
-      <button class="modal-close" onclick="closeSidePanel()">✕</button>
-    </div>
-    <div class="side-panel-body" id="sidePanelBody"></div>
-    <div class="side-panel-footer">
-      <button class="btn-ghost" onclick="deleteTask(currentDetailTask)">🗑 Delete</button>
-      <button class="btn-primary" onclick="editTask(currentDetailTask)">✏ Edit</button>
     </div>
   </div>
 
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="app.js" defer></script>
+  <script src="app.js"></script>
 </body>
 </html>
