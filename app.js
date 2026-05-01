@@ -696,3 +696,8 @@ async function sendInvite() {
   }
 }
 
+function fillDemo(email, password) {
+  document.getElementById('loginEmail').value = email;
+  document.getElementById('loginPassword').value = password;
+  handleLogin();
+}
