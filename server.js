@@ -146,9 +146,7 @@ app.delete('/api/tasks/:id', auth, adminCheck, async (req, res) => {
   res.json({ msg: 'Task deleted' });
 });
 
-app.get('*', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server on port ${PORT}`));
