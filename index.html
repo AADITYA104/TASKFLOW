@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -135,6 +136,10 @@
           <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span>Analytics</span>
         </a>
+        <a href="#" class="nav-item" data-page="activity" onclick="navigate('activity', this); return false;">
+          <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          <span>Activity Log</span>
+        </a>
       </nav>
 
       <div class="sidebar-footer">
@@ -165,9 +170,10 @@
           <div class="breadcrumb" id="breadcrumb">Overview</div>
         </div>
         <div class="topbar-right">
-          <div class="search-wrap">
-            <input type="text" placeholder="Search tasks..." class="search-input" id="globalSearch" oninput="handleSearch(this.value)" />
+          <div class="search-wrap" onclick="openCommandPalette()" style="cursor: pointer;">
+            <input type="text" placeholder="Search or type command..." class="search-input" readonly style="cursor: pointer;" />
             <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.65rem; color: var(--text-tertiary); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-subtle); pointer-events: none;">⌘K</span>
           </div>
           <button type="button" class="btn-primary small" id="quickAddBtn">+ New Task</button>
           <div class="notification-btn">
@@ -291,7 +297,44 @@
           </div>
         </div>
       </div>
+      <!-- ACTIVITY LOG PAGE -->
+      <div id="page-activity" class="page hidden">
+        <div class="page-actions">
+          <h2 class="section-title">Audit Trail</h2>
+        </div>
+        <div class="activity-timeline" id="activityList">
+          <!-- Populated via JS -->
+        </div>
+      </div>
     </main>
+  </div>
+
+  <!-- COMMAND PALETTE MODAL (CMD+K) -->
+  <div class="modal-overlay hidden" id="cmdPaletteOverlay" onclick="closeModal('cmdPaletteOverlay')">
+    <div class="modal cmd-palette" onclick="event.stopPropagation()">
+      <div class="cmd-header">
+        <svg viewBox="0 0 24 24" class="cmd-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="cmdInput" placeholder="Search tasks, projects, or type a command..." autocomplete="off" oninput="handleCmdSearch(this.value)" />
+        <span class="cmd-esc">ESC</span>
+      </div>
+      <div class="cmd-body" id="cmdResults">
+        <div class="cmd-group">
+          <div class="cmd-group-title">Quick Actions</div>
+          <div class="cmd-item" onclick="closeModal('cmdPaletteOverlay'); openTaskModal()">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Create New Task
+          </div>
+          <div class="cmd-item admin-only" onclick="closeModal('cmdPaletteOverlay'); openProjectModal()">
+            <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            Create New Project
+          </div>
+        </div>
+        <div class="cmd-group" id="cmdTaskResults" style="display:none;">
+          <div class="cmd-group-title">Tasks</div>
+          <div id="cmdTaskItems"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- TASK MODAL -->
@@ -422,7 +465,7 @@
     </div>
   </div>
 
-  <div class="toast-container" id="toastContainer"></div>
+  <div class="toast-container" id="toast-container"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js"></script>

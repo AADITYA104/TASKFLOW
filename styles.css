@@ -212,3 +212,52 @@ body::before { content: ''; position: fixed; inset: 0; background: radial-gradie
 .toast { background: var(--bg-surface-elevated); backdrop-filter: blur(12px); border: 1px solid var(--border-strong); color: var(--text-primary); padding: 14px 20px; border-radius: 12px; font-size: 0.9rem; font-weight: 500; box-shadow: var(--shadow-md); animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 .empty-state { padding: 60px; text-align: center; color: var(--text-tertiary); border: 1px dashed var(--border-strong); border-radius: 20px; }
+
+/* ── COMMAND PALETTE ── */
+.cmd-palette { 
+  position: relative; top: 10vh; max-width: 600px; padding: 0; 
+  background: var(--bg-surface-elevated); backdrop-filter: blur(24px);
+  border: 1px solid var(--border-strong); box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 20px 40px rgba(0,0,0,0.4);
+}
+.cmd-header { padding: 16px 24px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--border-subtle); }
+.cmd-icon { width: 20px; height: 20px; stroke: var(--text-tertiary); fill: none; stroke-width: 2.2; }
+#cmdInput { flex: 1; background: transparent; border: none; color: var(--text-primary); font-size: 1.15rem; outline: none; font-family: var(--font-sans); }
+.cmd-esc { font-size: 0.65rem; color: var(--text-tertiary); padding: 3px 6px; border: 1px solid var(--border-subtle); border-radius: 6px; background: rgba(255,255,255,0.03); }
+.cmd-body { padding: 12px 0; max-height: 380px; overflow-y: auto; }
+.cmd-group-title { padding: 8px 24px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); font-weight: 700; }
+.cmd-item { 
+  padding: 12px 24px; display: flex; align-items: center; gap: 16px; 
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s; font-size: 0.95rem;
+}
+.cmd-item:hover, .cmd-item.selected { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+.cmd-item svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; opacity: 0.7; }
+
+/* ── ACTIVITY TIMELINE ── */
+.activity-timeline { display: flex; flex-direction: column; gap: 1px; background: var(--border-subtle); border: 1px solid var(--border-subtle); border-radius: 16px; overflow: hidden; }
+.activity-item { 
+  display: flex; gap: 20px; padding: 20px 24px; background: var(--bg-surface); 
+  transition: background 0.2s; 
+}
+.activity-item:hover { background: var(--bg-surface-hover); }
+.act-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); flex-shrink: 0; }
+.act-icon svg { width: 18px; height: 18px; stroke: var(--text-primary); fill: none; stroke-width: 2; }
+.act-content { flex: 1; }
+.act-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 4px; }
+.act-details { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; }
+.act-meta { font-size: 0.78rem; color: var(--text-tertiary); margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+
+/* ── TASK GLOW ANIMATION ── */
+.task-completed-glow { 
+  animation: glowPulse 2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-color: var(--status-done) !important;
+}
+@keyframes glowPulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 30px 10px rgba(16, 185, 129, 0.1); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Custom scrollbar for cmd palette */
+.cmd-body::-webkit-scrollbar { width: 6px; }
+.cmd-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; }
+

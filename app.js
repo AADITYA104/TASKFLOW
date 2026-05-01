@@ -1,5 +1,6 @@
-let state = { user: null, token: null, theme: 'dark', projects: [], tasks: [], team: [] };
+let state = { user: null, token: null, theme: 'dark', projects: [], tasks: [], team: [], activities: [] };
 const API = '/api';
+let socket;
 
 document.addEventListener('DOMContentLoaded', () => {
   initBgCanvas();
@@ -7,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (t) { state.theme = t; document.documentElement.setAttribute('data-theme', t); }
   const token = localStorage.getItem('tf-token'), user = localStorage.getItem('tf-user');
   if (token && user) { state.token = token; state.user = JSON.parse(user); loginSuccess(); }
+  initKeyboardShortcuts();
 });
 
 function initBgCanvas() {
@@ -32,6 +34,122 @@ function initBgCanvas() {
   })();
 }
 
+function initSocket() {
+  if (typeof io !== 'undefined') {
+    socket = io();
+    socket.on('dataChanged', (data) => {
+      console.log('Real-time update:', data);
+      refreshData();
+    });
+    socket.on('activityLogged', (activity) => {
+      state.activities.unshift(activity);
+      if (document.getElementById('page-activity').classList.contains('active')) renderActivityLog();
+      showToast(`Activity: ${activity.details}`);
+    });
+  }
+}
+
+async function refreshData() {
+  try {
+    state.projects = await apiCall('/projects');
+    state.tasks = await apiCall('/tasks');
+    if (state.user.role === 'admin') state.team = await apiCall('/users');
+    renderDashboard();
+    renderKanban();
+    renderTasks();
+    if (state.user.role === 'admin') { renderTeam(); renderAnalytics(); }
+    updateBadges();
+  } catch (e) { console.error('Refresh error', e); }
+}
+
+function initKeyboardShortcuts() {
+  window.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      openCommandPalette();
+    }
+    if (e.key === 'Escape') {
+      closeModal('cmdPaletteOverlay');
+    }
+  });
+}
+
+function openCommandPalette() {
+  const overlay = document.getElementById('cmdPaletteOverlay');
+  overlay.classList.remove('hidden');
+  const input = document.getElementById('cmdInput');
+  input.value = '';
+  input.focus();
+  handleCmdSearch('');
+}
+
+function handleCmdSearch(query) {
+  const items = document.getElementById('cmdTaskItems');
+  const taskRes = document.getElementById('cmdTaskResults');
+  if (!query) {
+    taskRes.style.display = 'none';
+    return;
+  }
+  const filtered = state.tasks.filter(t => t.title.toLowerCase().includes(query.toLowerCase())).slice(0, 5);
+  if (filtered.length > 0) {
+    taskRes.style.display = 'block';
+    items.innerHTML = filtered.map(t => `
+      <div class="cmd-item" onclick="viewTaskDetails('${t._id}')">
+        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <span>${t.title} <small style="color:var(--text-tertiary)">— ${t.projectId ? t.projectId.name : 'No Project'}</small></span>
+      </div>
+    `).join('');
+  } else {
+    taskRes.style.display = 'none';
+  }
+}
+
+function viewTaskDetails(id) {
+  closeModal('cmdPaletteOverlay');
+  const task = state.tasks.find(t => t._id === id);
+  if (task) {
+    // Open task modal for editing/viewing
+    openTaskModal(task);
+  }
+}
+
+async function renderActivityLog() {
+  try {
+    const list = document.getElementById('activityList');
+    if (!state.activities.length) state.activities = await apiCall('/api/activities');
+    
+    if (state.activities.length === 0) {
+      list.innerHTML = '<div class="empty-state">No activities logged yet.</div>';
+      return;
+    }
+
+    list.innerHTML = state.activities.map(a => `
+      <div class="activity-item">
+        <div class="act-icon">${getActIcon(a.action)}</div>
+        <div class="act-content">
+          <div class="act-title">${a.user}</div>
+          <div class="act-details">${a.details}</div>
+          <div class="act-meta">
+            <span>${new Date(a.createdAt).toLocaleString()}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) { console.error(e); }
+}
+
+function getActIcon(action) {
+  const icons = {
+    'task_created': '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+    'task_updated': '<svg viewBox="0 0 24 24"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/></svg>',
+    'task_deleted': '<svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+    'project_created': '<svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>',
+    'user_joined': '<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>',
+    'system': '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>'
+  };
+  return icons[action] || icons['system'];
+}
+
 function switchToRegister() { document.getElementById('loginForm').classList.add('hidden'); document.getElementById('registerForm').classList.remove('hidden'); }
 function switchToLogin() { document.getElementById('registerForm').classList.add('hidden'); document.getElementById('loginForm').classList.remove('hidden'); }
 
@@ -40,15 +158,13 @@ async function apiCall(ep, method='GET', body=null) {
   if (state.token) h['Authorization'] = `Bearer ${state.token}`;
   const opts = { method, headers: h };
   if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(`${API}${ep}`, opts);
+  const res = await fetch(`${ep.startsWith('/api') ? ep : API + ep}`, opts);
   if (!res.ok) { const e = await res.json(); throw new Error(e.msg || 'API Error'); }
   return res.json();
 }
 
 async function handleLogin() {
-  const email = document.getElementById('loginEmail').value;
-  const pw = document.getElementById('loginPassword').value;
-  const err = document.getElementById('loginError');
+  const email = document.getElementById('loginEmail').value, pw = document.getElementById('loginPassword').value, err = document.getElementById('loginError');
   if (!email || !pw) { err.textContent = 'Email and password required.'; return; }
   try {
     const d = await apiCall('/auth/login','POST',{email,password:pw});
@@ -59,9 +175,7 @@ async function handleLogin() {
 }
 
 async function handleRegister() {
-  const name=document.getElementById('regName').value, email=document.getElementById('regEmail').value;
-  const pw=document.getElementById('regPassword').value, role=document.getElementById('regRole').value;
-  const err=document.getElementById('regError');
+  const name=document.getElementById('regName').value, email=document.getElementById('regEmail').value, pw=document.getElementById('regPassword').value, role=document.getElementById('regRole').value, err=document.getElementById('regError');
   if(!name||!email||!pw){err.textContent='All fields required.';return;}
   try {
     const d=await apiCall('/auth/register','POST',{name,email,password:pw,role});
@@ -81,7 +195,12 @@ function loginSuccess() {
   const overlay = document.getElementById('authOverlay');
   overlay.style.transition = 'opacity .5s';
   overlay.style.opacity = '0';
-  setTimeout(() => { overlay.classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); initApp(); }, 500);
+  setTimeout(() => { 
+    overlay.classList.add('hidden'); 
+    document.getElementById('app').classList.remove('hidden'); 
+    initApp(); 
+    initSocket();
+  }, 500);
 }
 
 function logout() {
@@ -98,228 +217,237 @@ async function initApp() {
   const adminEls=document.querySelectorAll('.admin-only');
   if(state.user.role==='admin') adminEls.forEach(el=>el.classList.remove('hidden'));
   else adminEls.forEach(el=>el.classList.add('hidden'));
-  document.getElementById('quickAddBtn').onclick=()=>openTaskModal();
-  const dp=document.getElementById('page-dashboard'); if(dp) dp.style.opacity='1';
-  await loadData();
-  renderDashboard();
+  
+  await refreshData();
 }
 
-async function loadData() {
-  try {
-    const [projects, tasks] = await Promise.all([apiCall('/projects'), apiCall('/tasks')]);
-    state.projects=projects;
-    if(state.user.role==='admin'){state.tasks=tasks;state.team=await apiCall('/users');}
-    else{state.tasks=tasks.filter(t=>t.assignee&&t.assignee._id===state.user.id);}
-    updateBadges();
-  } catch(e) {
-    showToast('Failed to load data');
-    if(e.message==='No token'||e.message==='Invalid token') logout();
-  }
+function navigate(page, el) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+  const target = document.getElementById(`page-${page}`);
+  target.classList.remove('hidden');
+  target.classList.add('active');
+  
+  const titles = { 'dashboard':'Dashboard', 'projects':'Projects', 'tasks':'My Tasks', 'team':'Team Management', 'analytics':'Analytics', 'activity':'Activity Log' };
+  document.getElementById('pageTitle').textContent = titles[page] || 'TaskFlow';
+  document.getElementById('breadcrumb').textContent = `Workspace / ${titles[page]}`;
+
+  if (page === 'activity') renderActivityLog();
 }
 
 function updateBadges() {
-  document.getElementById('projectsBadge').textContent=state.projects.length;
-  document.getElementById('tasksBadge').textContent=state.tasks.length;
-}
-
-function navigate(pageId, navItem) {
-  if(navItem){document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));navItem.classList.add('active');}
-  document.querySelectorAll('.page').forEach(p=>{p.classList.add('hidden');p.style.opacity='0';});
-  const t=document.getElementById(`page-${pageId}`);
-  if(t){t.classList.remove('hidden');t.style.opacity='1';}
-  const titles={dashboard:'Dashboard',projects:'Projects',tasks:'My Tasks',team:'Team',analytics:'Analytics'};
-  document.getElementById('pageTitle').textContent=titles[pageId]||'TaskFlow';
-  document.getElementById('breadcrumb').textContent=titles[pageId]||'';
-  if(pageId==='dashboard') renderDashboard();
-  if(pageId==='projects') renderProjects();
-  if(pageId==='tasks') renderKanban();
-  if(pageId==='team'&&state.user.role==='admin') renderTeam();
-  if(pageId==='analytics') renderAnalytics();
-}
-
-function toggleTheme() {
-  state.theme=state.theme==='dark'?'light':'dark';
-  document.documentElement.setAttribute('data-theme',state.theme);
-  localStorage.setItem('tf-theme',state.theme);
-}
-
-function handleSearch(val) {
-  const v=val.toLowerCase();
-  if(!v){renderKanban();return;}
-  const filtered=state.tasks.filter(t=>t.title.toLowerCase().includes(v));
-  const cols={'todo':[],'in-progress':[],'done':[]};
-  filtered.forEach(t=>{if(cols[t.status]) cols[t.status].push(t);});
-  renderKanbanCols(cols);
-  navigate('tasks',document.querySelector('[data-page="tasks"]'));
+  document.getElementById('projectsBadge').textContent = state.projects.length;
+  document.getElementById('tasksBadge').textContent = state.tasks.filter(t => t.status !== 'done').length;
 }
 
 function renderDashboard() {
-  const pEl=document.getElementById('totalProjects');if(pEl) pEl.textContent=state.projects.length;
-  document.getElementById('totalTasks').textContent=state.tasks.length;
-  const done=state.tasks.filter(t=>t.status==='done').length;
-  document.getElementById('completedTasks').textContent=done;
-  const today=new Date();today.setHours(0,0,0,0);
-  const overdue=state.tasks.filter(t=>t.status!=='done'&&t.due&&new Date(t.due)<today).length;
-  document.getElementById('overdueTasks').textContent=overdue;
+  document.getElementById('stat-projects').textContent = state.projects.length;
+  document.getElementById('stat-tasks').textContent = state.tasks.length;
+  document.getElementById('stat-team').textContent = state.team.length || 1;
+  document.getElementById('stat-due').textContent = state.tasks.filter(t => t.status !== 'done').length;
 
-  const list=document.getElementById('recentTasksList');if(!list) return;
-  list.innerHTML='';
-  if(state.tasks.length===0){
-    list.innerHTML='<div class="empty-state"><h3>No tasks yet</h3><p>Create your first task to get started.</p></div>';
-  } else {
-    const recent=[...state.tasks].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)).slice(0,5);
-    recent.forEach(t=>{
-      const name=t.assignee?t.assignee.name:'Unassigned';
-      const el=document.createElement('div');el.className='task-list-item';
-      el.innerHTML=`<div class="t-info"><span class="t-title">${t.title}</span><div class="t-meta"><span>Due: ${t.due||'—'}</span><span>${name}</span></div></div><span class="t-status s-${t.status}">${t.status.replace('-',' ')}</span>`;
-      list.appendChild(el);
-    });
-  }
-
-  const ctx=document.getElementById('statusChart');
-  if(ctx&&typeof Chart!=='undefined'){
-    if(window._sc) window._sc.destroy();
-    const td=state.tasks.filter(t=>t.status==='todo').length;
-    const ip=state.tasks.filter(t=>t.status==='in-progress').length;
-    window._sc=new Chart(ctx,{type:'doughnut',data:{labels:['To Do','In Progress','Done'],datasets:[{data:[td,ip,done],backgroundColor:['#64748b','#0ea5e9','#10b981'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,cutout:'65%',plugins:{legend:{position:'bottom',labels:{color:state.theme==='dark'?'#e2e8f0':'#1e293b',padding:16,font:{size:12}}}}}});
-  }
+  const recent = [...state.tasks].sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
+  const list = document.getElementById('recentTasksList');
+  if (recent.length === 0) { list.innerHTML = '<div class="empty-state">No tasks yet.</div>'; return; }
+  list.innerHTML = recent.map(t => `
+    <div class="task-list-item" onclick="openTaskModal(${JSON.stringify(t).replace(/"/g, '&quot;')})">
+      <div class="t-main">
+        <div class="t-title">${t.title}</div>
+        <div class="t-meta">
+          <span style="color:${t.projectId?.color || 'var(--text-tertiary)'}">● ${t.projectId?.name || 'No Project'}</span>
+          <span>Due: ${t.due || 'No date'}</span>
+        </div>
+      </div>
+      <div class="t-status" style="border-color:${getStatusColor(t.status)}; color:${getStatusColor(t.status)}">${t.status}</div>
+    </div>
+  `).join('');
 }
 
-function renderProjects(filter='all') {
-  const g=document.getElementById('projectsGrid');if(!g)return;g.innerHTML='';
-  let projs=state.projects;
-  if(filter!=='all') projs=projs.filter(p=>p.status===filter);
-  if(projs.length===0){g.innerHTML='<div class="empty-state" style="grid-column:1/-1"><h3>No projects found</h3><p>Create a new project.</p></div>';return;}
-  projs.forEach(p=>{
-    const tc=state.tasks.filter(t=>t.projectId&&t.projectId._id===p._id).length;
-    const c=document.createElement('div');c.className='project-card';
-    c.innerHTML=`<div class="p-color-bar" style="background:${p.color}"></div><div class="p-header"><span class="p-title">${p.name}</span></div><p class="p-desc">${p.desc||''}</p><div class="p-meta"><span>${tc} Tasks</span><span>Due: ${p.due||'—'}</span></div>`;
-    g.appendChild(c);
+function renderKanban() {
+  const cols = ['todo', 'in-progress', 'done'];
+  cols.forEach(status => {
+    const colTasks = state.tasks.filter(t => t.status === status);
+    document.getElementById(`count-${status}`).textContent = colTasks.length;
+    const container = document.getElementById(`col-${status}`);
+    if (colTasks.length === 0) { container.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-tertiary); font-size:0.8rem;">Drop tasks here</div>'; return; }
+    container.innerHTML = colTasks.map(t => `
+      <div class="k-card" draggable="true" ondragstart="dragTask(event, '${t._id}')" onclick="openTaskModal(${JSON.stringify(t).replace(/"/g, '&quot;')})" id="task-${t._id}">
+        <div class="k-title">${t.title}</div>
+        <div class="k-tags"><span class="k-tag" style="border-color:${getPriorityColor(t.priority)}; color:${getPriorityColor(t.priority)}">${t.priority}</span></div>
+        <div class="k-meta">
+          <span>${t.projectId?.name || ''}</span>
+          <div class="k-assignee" title="${t.assignee?.name || 'Unassigned'}">${(t.assignee?.name || '?').charAt(0)}</div>
+        </div>
+      </div>
+    `).join('');
   });
 }
 
-function filterProjects(s,btn){document.querySelectorAll('#page-projects .filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderProjects(s);}
-
-function renderKanban(filter='all') {
-  const cols={'todo':[],'in-progress':[],'done':[]};
-  const today=new Date();today.setHours(0,0,0,0);
-  state.tasks.forEach(t=>{
-    let show=filter==='all'||(filter==='overdue'?t.status!=='done'&&t.due&&new Date(t.due)<today:t.status===filter);
-    if(show&&cols[t.status]) cols[t.status].push(t);
-  });
-  renderKanbanCols(cols);
-}
-
-function renderKanbanCols(cols) {
-  ['todo','in-progress','done'].forEach(status=>{
-    const col=document.getElementById(`col-${status}`);if(!col) return;
-    col.innerHTML='';
-    const countEl=document.getElementById(`count-${status}`);if(countEl) countEl.textContent=cols[status].length;
-    cols[status].forEach(t=>{
-      const proj=t.projectId||{color:'#888',name:'General'};
-      const card=document.createElement('div');card.className='k-card';card.draggable=true;card.id=`task-${t._id}`;
-      card.ondragstart=(e)=>drag(e,t._id);
-      card.addEventListener('mousemove',e=>{
-        const r=card.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
-        const rx=((y-r.height/2)/(r.height/2))*-12, ry=((x-r.width/2)/(r.width/2))*12;
-        card.style.transform=`perspective(600px) rotateX(${rx}deg) rotateY(${ry}deg) scale3d(1.03,1.03,1.03)`;
-      });
-      card.addEventListener('mouseleave',()=>{card.style.transform='';});
-      const an=t.assignee?t.assignee.name.charAt(0).toUpperCase():'?';
-      card.innerHTML=`<div class="k-tags"><span class="k-tag" style="background:${proj.color}18;color:${proj.color}">${proj.name}</span><span class="k-tag" style="background:var(--bg-tertiary);color:var(--text-secondary)">${t.priority}</span></div><div class="k-title">${t.title}</div><div class="k-meta"><span>${t.due||''}</span><div class="k-assignee" title="${t.assignee?t.assignee.name:'Unassigned'}">${an}</div></div>`;
-      col.appendChild(card);
-    });
-  });
-}
-
-function filterTasks(s,btn){document.querySelectorAll('#page-tasks .filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderKanban(s);}
-function allowDrop(ev){ev.preventDefault();}
-function drag(ev,taskId){ev.dataTransfer.setData('text',taskId);}
-
-async function dropTask(ev,newStatus) {
-  ev.preventDefault();
-  const id=ev.dataTransfer.getData('text'), task=state.tasks.find(t=>t._id===id);
-  if(task&&task.status!==newStatus){
-    const old=task.status;task.status=newStatus;renderKanban();
-    if(newStatus==='done'&&typeof confetti!=='undefined') confetti({particleCount:80,spread:60,origin:{y:.6},colors:['#8b5cf6','#10b981','#0ea5e9']});
-    try{await apiCall(`/tasks/${id}`,'PUT',{status:newStatus});renderDashboard();}
-    catch(e){task.status=old;renderKanban();showToast('Error updating task');}
-  }
-}
-
-function openModal(id){document.getElementById(id)?.classList.remove('hidden');}
-function closeModal(id){document.getElementById(id)?.classList.add('hidden');}
-
-function showToast(msg) {
-  const c=document.getElementById('toastContainer');if(!c)return;
-  const t=document.createElement('div');t.className='toast';t.textContent=msg;
-  c.appendChild(t);setTimeout(()=>t.remove(),3000);
-}
-
-async function openTaskModal() {
-  const ps=document.getElementById('taskProject');
-  ps.innerHTML=state.projects.map(p=>`<option value="${p._id}">${p.name}</option>`).join('');
-  const as=document.getElementById('taskAssignee');
-  if(state.user.role==='admin'&&state.team.length>0) as.innerHTML=state.team.map(u=>`<option value="${u._id}">${u.name}</option>`).join('');
-  else if(state.user.role==='admin'){try{state.team=await apiCall('/users');as.innerHTML=state.team.map(u=>`<option value="${u._id}">${u.name}</option>`).join('');}catch(e){as.innerHTML=`<option value="${state.user.id}">${state.user.name}</option>`;}}
-  else as.innerHTML=`<option value="${state.user.id}">${state.user.name}</option>`;
-  document.getElementById('taskTitle').value='';document.getElementById('taskDesc').value='';document.getElementById('taskDue').value='';
-  document.getElementById('taskModalTitle').textContent='New Task';
-  openModal('taskModalOverlay');
-}
-
-async function saveTask() {
-  const title=document.getElementById('taskTitle').value;if(!title)return showToast('Title required!');
-  const payload={title,desc:document.getElementById('taskDesc').value,projectId:document.getElementById('taskProject').value,priority:document.getElementById('taskPriority').value,assignee:document.getElementById('taskAssignee').value,due:document.getElementById('taskDue').value,status:document.getElementById('taskStatus').value};
-  try{const t=await apiCall('/tasks','POST',payload);state.tasks.push(t);updateBadges();renderKanban();renderDashboard();closeModal('taskModalOverlay');showToast('Task created!');}
-  catch(e){showToast(e.message);}
-}
-
-function openProjectModal(){document.getElementById('projectName').value='';document.getElementById('projectDesc').value='';openModal('projectModalOverlay');}
-
-async function saveProject() {
-  const name=document.getElementById('projectName').value;if(!name) return showToast('Name required!');
-  const payload={name,desc:document.getElementById('projectDesc').value,color:document.getElementById('projectColor').value,due:document.getElementById('projectDue').value};
-  try{const p=await apiCall('/projects','POST',payload);state.projects.push(p);updateBadges();renderProjects();renderDashboard();closeModal('projectModalOverlay');showToast('Project created!');}
-  catch(e){showToast(e.message);}
-}
+function renderTasks() { /* Shared with Kanban logic */ }
 
 function renderTeam() {
-  const g=document.getElementById('teamGrid');if(!g||!state.team)return;
-  g.innerHTML=state.team.map(u=>`<div class="dash-card"><div class="user-card"><div class="user-avatar" style="width:48px;height:48px;font-size:1.1rem">${u.name.charAt(0).toUpperCase()}</div><div class="user-info"><span class="user-name" style="font-size:1rem">${u.name}</span><span class="user-role">${u.role}</span><span style="font-size:.72rem;color:var(--text-tertiary)">${u.email}</span></div></div></div>`).join('');
+  const grid = document.getElementById('teamGrid');
+  grid.innerHTML = state.team.map(u => `
+    <div class="stat-card">
+      <div class="user-avatar" style="width:48px; height:48px; font-size:1.2rem;">${u.name.charAt(0)}</div>
+      <div class="user-info">
+        <div class="user-name">${u.name}</div>
+        <div class="user-role">${u.role}</div>
+        <div style="font-size:0.75rem; color:var(--text-tertiary)">${u.email}</div>
+      </div>
+    </div>
+  `).join('');
 }
 
 function renderAnalytics() {
-  const ctx=document.getElementById('analyticsChart');
-  if(ctx&&typeof Chart!=='undefined'){
-    if(window._ac) window._ac.destroy();
-    const td=state.tasks.filter(t=>t.status==='todo').length;
-    const ip=state.tasks.filter(t=>t.status==='in-progress').length;
-    const dn=state.tasks.filter(t=>t.status==='done').length;
-    window._ac=new Chart(ctx,{type:'doughnut',data:{labels:['To Do','In Progress','Done'],datasets:[{data:[td,ip,dn],backgroundColor:['#64748b','#0ea5e9','#10b981'],borderWidth:0}]},options:{responsive:true,cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:state.theme==='dark'?'#e2e8f0':'#1e293b',padding:16}}}}});
+  const ctx = document.getElementById('analyticsChart');
+  if (!ctx) return;
+  const counts = { todo: 0, 'in-progress': 0, done: 0 };
+  state.tasks.forEach(t => counts[t.status]++);
+  
+  if (window.myChart) window.myChart.destroy();
+  window.myChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['To Do', 'In Progress', 'Done'],
+      datasets: [{
+        data: [counts.todo, counts['in-progress'], counts.done],
+        backgroundColor: ['#71717a', '#3b82f6', '#10b981'],
+        borderWidth: 0,
+        hoverOffset: 10
+      }]
+    },
+    options: { cutout: '70%', plugins: { legend: { display: false } } }
+  });
+}
+
+// Modal Handlers
+function openTaskModal(task = null) {
+  const m = document.getElementById('taskModalOverlay');
+  const title = document.getElementById('taskModalTitle');
+  const pid = document.getElementById('taskProj');
+  const uid = document.getElementById('taskAssignee');
+  
+  pid.innerHTML = state.projects.map(p => `<option value="${p._id}">${p.name}</option>`).join('');
+  uid.innerHTML = state.team.map(u => `<option value="${u._id}">${u.name}</option>`).join('');
+  
+  if (task) {
+    title.textContent = 'Edit Task';
+    document.getElementById('taskModalId').value = task._id;
+    document.getElementById('taskTitle').value = task.title;
+    document.getElementById('taskDesc').value = task.desc || '';
+    document.getElementById('taskProj').value = task.projectId?._id || '';
+    document.getElementById('taskAssignee').value = task.assignee?._id || '';
+    document.getElementById('taskPriority').value = task.priority;
+    document.getElementById('taskStatus').value = task.status;
+    document.getElementById('taskDue').value = task.due || '';
+    document.getElementById('deleteTaskBtn').classList.remove('hidden');
+  } else {
+    title.textContent = 'New Task';
+    document.getElementById('taskForm').reset();
+    document.getElementById('taskModalId').value = '';
+    document.getElementById('deleteTaskBtn').classList.add('hidden');
   }
-  const perf=document.getElementById('teamPerfList');
-  if(perf&&state.team.length>0){
-    perf.innerHTML=state.team.map(u=>{
-      const ut=state.tasks.filter(t=>t.assignee&&t.assignee._id===u._id);
-      const done=ut.filter(t=>t.status==='done').length;
-      const pct=ut.length?Math.round((done/ut.length)*100):0;
-      return `<div class="task-list-item"><div class="t-info"><span class="t-title">${u.name}</span><div class="t-meta"><span>${done}/${ut.length} done</span><span>${pct}%</span></div></div><div style="width:100px;height:6px;background:var(--bg-tertiary);border-radius:3px;overflow:hidden"><div style="width:${pct}%;height:100%;background:var(--status-done);border-radius:3px"></div></div></div>`;
-    }).join('');
+  m.classList.remove('hidden');
+}
+
+async function saveTask() {
+  const id = document.getElementById('taskModalId').value;
+  const data = {
+    title: document.getElementById('taskTitle').value,
+    desc: document.getElementById('taskDesc').value,
+    projectId: document.getElementById('taskProj').value,
+    assignee: document.getElementById('taskAssignee').value,
+    priority: document.getElementById('taskPriority').value,
+    status: document.getElementById('taskStatus').value,
+    due: document.getElementById('taskDue').value
+  };
+  try {
+    if (id) await apiCall(`/tasks/${id}`, 'PUT', data);
+    else await apiCall('/tasks', 'POST', data);
+    
+    if (data.status === 'done') triggerTaskGlow(id);
+    
+    closeModal('taskModalOverlay');
+    refreshData();
+    showToast(id ? 'Task updated' : 'Task created');
+  } catch (e) { showToast(e.message, true); }
+}
+
+async function deleteTask() {
+  const id = document.getElementById('taskModalId').value;
+  if (!confirm('Are you sure?')) return;
+  try {
+    await apiCall(`/tasks/${id}`, 'DELETE');
+    closeModal('taskModalOverlay');
+    refreshData();
+    showToast('Task deleted');
+  } catch (e) { showToast(e.message, true); }
+}
+
+function triggerTaskGlow(id) {
+  const el = document.getElementById(`task-${id}`);
+  if (el) {
+    el.classList.add('task-completed-glow');
+    confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#10b981', '#ffffff'] });
+    setTimeout(() => el.classList.remove('task-completed-glow'), 2000);
   }
 }
 
-function openInviteModal(){document.getElementById('inviteName').value='';document.getElementById('inviteEmail').value='';document.getElementById('invitePassword').value='Welcome123';openModal('inviteModalOverlay');}
-
-async function sendInvite() {
-  const name=document.getElementById('inviteName').value,email=document.getElementById('inviteEmail').value,pw=document.getElementById('invitePassword').value,role=document.getElementById('inviteRole').value;
-  if(!name||!email||!pw) return showToast('All fields required!');
-  try{await apiCall('/auth/register','POST',{name,email,password:pw,role});state.team=await apiCall('/users');renderTeam();closeModal('inviteModalOverlay');showToast(`Invited ${name}!`);}
-  catch(e){showToast(e.message==='User exists'?'User already exists.':'Error: '+e.message);}
+function openProjectModal() {
+  document.getElementById('projectForm').reset();
+  document.getElementById('projectModalOverlay').classList.remove('hidden');
 }
 
-async function deleteTask(taskId) {
-  if(!taskId||!confirm('Delete this task?')) return;
-  try{await apiCall(`/tasks/${taskId}`,'DELETE');state.tasks=state.tasks.filter(t=>t._id!==taskId);updateBadges();renderKanban();renderDashboard();showToast('Task deleted');}
-  catch(e){showToast(e.message);}
+async function saveProject() {
+  const data = {
+    name: document.getElementById('projName').value,
+    desc: document.getElementById('projDesc').value,
+    color: document.getElementById('projColor').value,
+    due: document.getElementById('projDue').value
+  };
+  try {
+    await apiCall('/projects', 'POST', data);
+    closeModal('projectModalOverlay');
+    refreshData();
+    showToast('Project created');
+  } catch (e) { showToast(e.message, true); }
+}
+
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+// Drag & Drop
+function dragTask(e, id) { e.dataTransfer.setData('text', id); }
+function allowDrop(e) { e.preventDefault(); }
+async function dropTask(e, status) {
+  e.preventDefault();
+  const id = e.dataTransfer.getData('text');
+  try {
+    await apiCall(`/tasks/${id}`, 'PUT', { status });
+    if (status === 'done') triggerTaskGlow(id);
+    refreshData();
+  } catch (e) { showToast(e.message, true); }
+}
+
+// Utils
+function getStatusColor(s) {
+  return { 'todo':'var(--status-todo)', 'in-progress':'var(--status-inprog)', 'done':'var(--status-done)' }[s] || 'var(--text-tertiary)';
+}
+function getPriorityColor(p) {
+  return { 'high':'#ef4444', 'medium':'#f59e0b', 'low':'#3b82f6' }[p] || 'var(--text-tertiary)';
+}
+function toggleTheme() {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', state.theme);
+  localStorage.setItem('tf-theme', state.theme);
+}
+function showToast(msg, isErr=false) {
+  const container = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  if (isErr) t.style.borderColor = 'var(--status-overdue)';
+  t.textContent = msg;
+  container.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
 }
