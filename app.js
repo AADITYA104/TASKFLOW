@@ -232,6 +232,16 @@ async function initApp() {
   } else {
     adminEls.forEach(el => el.classList.add('hidden'));
   }
+
+  // Wire up quick add button
+  const quickAddBtn = document.getElementById('quickAddBtn');
+  if (quickAddBtn) {
+    quickAddBtn.onclick = () => openTaskModal();
+  }
+
+  // Ensure dashboard is visible
+  const dashPage = document.getElementById('page-dashboard');
+  if (dashPage) dashPage.style.opacity = '1';
   
   await loadData();
   renderDashboard();

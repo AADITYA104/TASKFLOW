@@ -49,9 +49,19 @@
         </button>
         <p class="auth-switch">No account? <a href="#" onclick="switchToRegister()">Create one</a></p>
         <div class="demo-accounts">
-          <p>Demo accounts:</p>
-          <button onclick="fillDemo('admin@taskflow.io','admin123')" class="demo-btn">👑 Admin</button>
-          <button onclick="fillDemo('member@taskflow.io','member123')" class="demo-btn">👤 Member</button>
+          <p>Quick Login — Demo Accounts</p>
+          <div class="demo-btn-group">
+            <button type="button" onclick="fillDemo('admin@taskflow.io','admin123')" class="demo-btn">
+              <span class="demo-icon">👑</span>
+              <span class="demo-label">Admin Login</span>
+              <span class="demo-cred">admin@taskflow.io</span>
+            </button>
+            <button type="button" onclick="fillDemo('member@taskflow.io','member123')" class="demo-btn">
+              <span class="demo-icon">👤</span>
+              <span class="demo-label">Member Login</span>
+              <span class="demo-cred">member@taskflow.io</span>
+            </button>
+          </div>
         </div>
       </div>
 
