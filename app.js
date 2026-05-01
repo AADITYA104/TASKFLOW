@@ -58,8 +58,8 @@ function initThreeJSBg() {
 
   function animate() {
     requestAnimationFrame(animate);
-    bgParticles.rotation.y += 0.001;
-    bgParticles.rotation.x += 0.0005;
+    bgParticles.rotation.y += 0.003;
+    bgParticles.rotation.x += 0.0015;
     bgRenderer.render(bgScene, bgCamera);
   }
   animate();
@@ -467,9 +467,11 @@ function renderKanban(filter = 'all') {
         const y = e.clientY - rect.top;
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
-        const rotateX = ((y - centerY) / centerY) * -10;
-        const rotateY = ((x - centerX) / centerX) * 10;
-        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+        
+        const rotateX = ((y - centerY) / centerY) * -25;
+        const rotateY = ((x - centerX) / centerX) * 25;
+        
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.05, 1.05, 1.05)`;
       });
       card.addEventListener('mouseleave', () => {
         card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
