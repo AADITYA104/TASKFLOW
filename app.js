@@ -343,13 +343,14 @@ function renderTasks() {
 function renderTeam() {
   const grid = document.getElementById('teamGrid');
   grid.innerHTML = state.team.map(u => `
-    <div class="stat-card">
+    <div class="stat-card" style="position:relative;">
       <div class="user-avatar" style="width:48px; height:48px; font-size:1.2rem;">${u.name.charAt(0)}</div>
       <div class="user-info">
         <div class="user-name">${u.name}</div>
         <div class="user-role">${u.role}</div>
         <div style="font-size:0.75rem; color:var(--text-tertiary)">${u.email}</div>
       </div>
+      ${state.user.role === 'admin' && u._id !== state.user.id ? `<button class="btn-ghost small" onclick="removeMember('${u._id}')" style="position:absolute; top:10px; right:10px; color:var(--status-overdue); padding:4px 8px;">Remove</button>` : ''}
     </div>
   `).join('');
 }
@@ -408,7 +409,7 @@ function openTaskModal(task = null) {
     document.getElementById('taskPriority').value = task.priority;
     document.getElementById('taskStatus').value = task.status;
     document.getElementById('taskDue').value = task.due || '';
-    document.getElementById('deleteTaskBtn').classList.remove('hidden');
+    document.getElementById('deleteTaskBtn').style.display = 'block';
   } else {
     title.textContent = 'New Task';
     document.getElementById('taskTitle').value = '';
@@ -417,7 +418,7 @@ function openTaskModal(task = null) {
     document.getElementById('taskAssignee').value = '';
     document.getElementById('taskDue').value = '';
     document.getElementById('taskModalId').value = '';
-    document.getElementById('deleteTaskBtn').classList.add('hidden');
+    document.getElementById('deleteTaskBtn').style.display = 'none';
   }
   m.classList.remove('hidden');
 }
@@ -518,6 +519,30 @@ async function sendInvite() {
     showToast('Invite sent to ' + email);
     closeModal('inviteModalOverlay');
     refreshData();
+  } catch (e) { showToast(e.message, true); }
+}
+
+async function removeMember(id) {
+  if (!confirm('Remove this member?')) return;
+  try {
+    await apiCall(`/users/${id}`, 'DELETE');
+    refreshData();
+    showToast('Member removed');
+  } catch (e) { showToast(e.message, true); }
+}
+
+function openSettingsModal() {
+  document.getElementById('settingPassword').value = '';
+  document.getElementById('settingsModalOverlay').classList.remove('hidden');
+}
+
+async function saveSettings() {
+  const pw = document.getElementById('settingPassword').value;
+  if (!pw) { showToast('Password required', true); return; }
+  try {
+    await apiCall('/auth/profile', 'PUT', { password: pw });
+    closeModal('settingsModalOverlay');
+    showToast('Password updated successfully');
   } catch (e) { showToast(e.message, true); }
 }
 

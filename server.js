@@ -6,10 +6,22 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const server = createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
+
+// Nodemailer Ethereal mock setup
+const transporter = nodemailer.createTransport({
+  host: 'smtp.ethereal.email',
+  port: 587,
+  auth: {
+    user: 'demouser@ethereal.email',
+    pass: 'demopass123'
+  }
+});
+
 
 app.use(cors());
 app.use(express.json());
@@ -136,8 +148,28 @@ app.post('/api/auth/register', async (req, res) => {
     
     await logActivity('user_joined', `New user registered: ${name}`, name);
     
+    // Send Welcome / Invite Email
+    transporter.sendMail({
+      from: '"TaskFlow Admin" <admin@taskflow.io>',
+      to: email,
+      subject: 'Welcome to TaskFlow',
+      text: `Hello ${name},\n\nYou have been invited to TaskFlow.\nRole: ${role}\nYour temporary password is: ${password}\n\nPlease login and change your password.\n\nBest,\nTaskFlow Team`
+    }).catch(err => console.error('Email failed:', err));
+
     const token = jwt.sign({ id: user.id, role: user.role, name: user.name }, process.env.JWT_SECRET || 'taskflow_secure_123_local');
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+  } catch (e) { res.status(500).json({ msg: e.message }); }
+});
+
+app.put('/api/auth/profile', auth, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ msg: 'Password is required' });
+    const salt = await bcrypt.genSalt(10);
+    const hash = await bcrypt.hash(password, salt);
+    await User.findByIdAndUpdate(req.user.id, { password: hash });
+    await logActivity('system', `User updated profile password`, req.user.name);
+    res.json({ msg: 'Profile updated successfully' });
   } catch (e) { res.status(500).json({ msg: e.message }); }
 });
 
@@ -158,6 +190,16 @@ app.get('/api/users', auth, adminCheck, async (req, res) => {
   try {
     const users = await User.find().select('-password');
     res.json(users);
+  } catch (e) { res.status(500).json({ msg: e.message }); }
+});
+
+app.delete('/api/users/:id', auth, adminCheck, async (req, res) => {
+  try {
+    const u = await User.findByIdAndDelete(req.params.id);
+    if (!u) return res.status(404).json({ msg: 'User not found' });
+    await logActivity('system', `Removed team member: ${u.name}`, req.user.name);
+    io.emit('dataChanged', { type: 'user' });
+    res.json({ msg: 'User removed' });
   } catch (e) { res.status(500).json({ msg: e.message }); }
 });
 
@@ -193,7 +235,8 @@ app.delete('/api/projects/:id', auth, adminCheck, async (req, res) => {
   try {
     const p = await Project.findByIdAndDelete(req.params.id);
     if (!p) return res.status(404).json({ msg: 'Project not found' });
-    await logActivity('project_created', `Project deleted: ${p.name}`, req.user.name);
+    await Task.deleteMany({ projectId: req.params.id }); // cascade tasks
+    await logActivity('project_created', `Project and associated tasks deleted: ${p.name}`, req.user.name);
     io.emit('dataChanged', { type: 'project' });
     res.json({ msg: 'Project deleted' });
   } catch (e) { res.status(500).json({ msg: e.message }); }
