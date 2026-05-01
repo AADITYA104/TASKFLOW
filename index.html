@@ -20,7 +20,7 @@
   <!-- NOISE OVERLAY -->
   <div class="noise-overlay"></div>
 
-  <!-- ============ AUTH MODAL ============ -->
+  <!-- Modals and Overlays -->
   <div class="auth-overlay" id="authOverlay">
     <div class="auth-modal" id="authModal">
       <div class="auth-brand">
@@ -28,7 +28,6 @@
         <h2>TaskFlow</h2>
       </div>
 
-      <!-- LOGIN FORM -->
       <div class="auth-form" id="loginForm">
         <h3 class="auth-title">Welcome back</h3>
         <p class="auth-subtitle">Sign in to your workspace</p>
@@ -53,7 +52,6 @@
         </div>
       </div>
 
-      <!-- REGISTER FORM -->
       <div class="auth-form hidden" id="registerForm">
         <h3 class="auth-title">Create account</h3>
         <p class="auth-subtitle">Join your team on TaskFlow</p>
@@ -86,10 +84,7 @@
     </div>
   </div>
 
-  <!-- ============ MAIN APP ============ -->
   <div class="app hidden" id="app">
-
-    <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="logo-mark">TF</div>
@@ -145,10 +140,7 @@
       </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <main class="main-content" id="mainContent">
-
-      <!-- TOP BAR -->
       <header class="topbar">
         <div class="topbar-left">
           <h1 class="page-title" id="pageTitle">Dashboard</h1>
@@ -167,8 +159,6 @@
         </div>
       </header>
 
-      <!-- PAGES -->
-      <!-- DASHBOARD PAGE -->
       <div class="page active" id="page-dashboard">
         <div class="stats-grid" id="statsGrid">
           <div class="stat-card" data-index="0">
@@ -223,7 +213,6 @@
         </div>
       </div>
 
-      <!-- PROJECTS PAGE -->
       <div class="page hidden" id="page-projects">
         <div class="page-actions">
           <div class="filter-row">
@@ -236,7 +225,6 @@
         <div class="projects-grid" id="projectsGrid"></div>
       </div>
 
-      <!-- TASKS PAGE -->
       <div class="page hidden" id="page-tasks">
         <div class="page-actions">
           <div class="filter-row">
@@ -264,7 +252,6 @@
         </div>
       </div>
 
-      <!-- TEAM PAGE (ADMIN) -->
       <div class="page hidden" id="page-team">
         <div class="page-actions">
           <h2 class="section-title">Team Members</h2>
@@ -273,7 +260,6 @@
         <div class="team-grid" id="teamGrid"></div>
       </div>
 
-      <!-- ANALYTICS PAGE (ADMIN) -->
       <div class="page hidden" id="page-analytics">
         <div class="analytics-grid">
           <div class="dash-card">
@@ -301,8 +287,6 @@
     </main>
   </div>
 
-  <!-- ======= MODALS ======= -->
-  <!-- Task Modal -->
   <div class="modal-overlay hidden" id="taskModalOverlay">
     <div class="modal" id="taskModal">
       <div class="modal-header">
@@ -359,7 +343,6 @@
     </div>
   </div>
 
-  <!-- Project Modal -->
   <div class="modal-overlay hidden" id="projectModalOverlay">
     <div class="modal" id="projectModal">
       <div class="modal-header">
@@ -394,7 +377,6 @@
     </div>
   </div>
 
-  <!-- Task Detail Side Panel -->
   <div class="side-panel-overlay hidden" id="sidePanelOverlay" onclick="closeSidePanel()"></div>
   <div class="side-panel hidden" id="sidePanel">
     <div class="side-panel-header">
@@ -408,7 +390,6 @@
     </div>
   </div>
 
-  <!-- TOAST -->
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="app.js"></script>
