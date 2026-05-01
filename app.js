@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// --- 3D Background Particles (Three.js) ---
+// init threejs bg
 let bgScene, bgCamera, bgRenderer, bgParticles;
 function initThreeJSBg() {
   const canvas = document.getElementById('bgCanvas');
@@ -248,7 +248,6 @@ function navigate(pageId, navItem) {
   const target = document.getElementById(`page-${pageId}`);
   if (target) {
     target.classList.remove('hidden');
-    // GSAP-style Page Flip Animation using Anime.js
     if (typeof anime !== 'undefined') {
       anime({
         targets: target,
@@ -291,7 +290,6 @@ function renderDashboard() {
   }).length;
   document.getElementById('overdueTasks').textContent = overdue;
 
-  // Stat numbers Count-Up Animation
   if (typeof anime !== 'undefined') {
     anime({
       targets: '.stat-value',
@@ -407,7 +405,6 @@ function renderKanban(filter = 'all') {
       card.id = `task-${t._id}`;
       card.ondragstart = (e) => drag(e, t._id);
       
-      // 3D Hover Tilt Effect
       card.addEventListener('mousemove', (e) => {
         const rect = card.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -464,7 +461,6 @@ async function dropTask(ev, newStatus) {
     task.status = newStatus;
     renderKanban(); 
     
-    // Confetti effect if moved to done
     if (newStatus === 'done' && typeof confetti !== 'undefined') {
       confetti({
         particleCount: 100,
