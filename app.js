@@ -116,7 +116,7 @@ function viewTaskDetails(id) {
 async function renderActivityLog() {
   try {
     const list = document.getElementById('activityList');
-    if (!state.activities.length) state.activities = await apiCall('/api/activities');
+    if (!state.activities.length) state.activities = await apiCall('/activities');
     
     if (state.activities.length === 0) {
       list.innerHTML = '<div class="empty-state">No activities logged yet.</div>';
@@ -284,7 +284,24 @@ function renderKanban() {
   });
 }
 
-function renderTasks() { /* Shared with Kanban logic */ }
+function renderTasks() {
+  const list = document.getElementById('taskListContainer');
+  if (!list) return;
+  if (state.tasks.length === 0) { list.innerHTML = '<div class="empty-state">No tasks yet. Create one above.</div>'; return; }
+  list.innerHTML = state.tasks.map(t => `
+    <div class="task-list-item" onclick="openTaskModal(${JSON.stringify(t).replace(/"/g, '&quot;')})">
+      <div class="t-main">
+        <div class="t-title">${t.title}</div>
+        <div class="t-meta">
+          <span style="color:${t.projectId?.color || 'var(--text-tertiary)'}">● ${t.projectId?.name || 'No Project'}</span>
+          <span>Due: ${t.due || 'No date'}</span>
+          <span style="color:var(--text-tertiary)">Assignee: ${t.assignee?.name || 'Unassigned'}</span>
+        </div>
+      </div>
+      <div class="t-status" style="border-color:${getStatusColor(t.status)}; color:${getStatusColor(t.status)}">${t.status}</div>
+    </div>
+  `).join('');
+}
 
 function renderTeam() {
   const grid = document.getElementById('teamGrid');
@@ -377,7 +394,7 @@ async function saveTask() {
 
 async function deleteTask() {
   const id = document.getElementById('taskModalId').value;
-  if (!confirm('Are you sure?')) return;
+  if (!confirm('Delete this task? This action cannot be undone.')) return;
   try {
     await apiCall(`/tasks/${id}`, 'DELETE');
     closeModal('taskModalOverlay');

@@ -179,6 +179,26 @@ app.post('/api/projects', auth, adminCheck, async (req, res) => {
   } catch (e) { res.status(500).json({ msg: e.message }); }
 });
 
+app.put('/api/projects/:id', auth, adminCheck, async (req, res) => {
+  try {
+    const p = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!p) return res.status(404).json({ msg: 'Project not found' });
+    await logActivity('project_created', `Project updated: ${p.name}`, req.user.name);
+    io.emit('dataChanged', { type: 'project' });
+    res.json(p);
+  } catch (e) { res.status(500).json({ msg: e.message }); }
+});
+
+app.delete('/api/projects/:id', auth, adminCheck, async (req, res) => {
+  try {
+    const p = await Project.findByIdAndDelete(req.params.id);
+    if (!p) return res.status(404).json({ msg: 'Project not found' });
+    await logActivity('project_created', `Project deleted: ${p.name}`, req.user.name);
+    io.emit('dataChanged', { type: 'project' });
+    res.json({ msg: 'Project deleted' });
+  } catch (e) { res.status(500).json({ msg: e.message }); }
+});
+
 // Tasks
 app.get('/api/tasks', auth, async (req, res) => {
   try {
@@ -226,10 +246,7 @@ app.get('/api/activities', auth, async (req, res) => {
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
-  socket.on('disconnect', () => {
-    console.log('Client disconnected:', socket.id);
-  });
+  socket.on('disconnect', () => {});
 });
 
 const PORT = process.env.PORT || 3000;
