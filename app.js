@@ -338,26 +338,55 @@ function renderDashboard() {
         <h3>No tasks yet</h3>
         <p>Create your first task to get started.</p>
       </div>`;
-    return;
+  } else {
+    const recent = [...state.tasks].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 4);
+    recent.forEach((t) => {
+      const item = document.createElement('div');
+      item.className = 'task-list-item';
+      const assigneeName = t.assignee ? t.assignee.name : 'Unassigned';
+      
+      item.innerHTML = `
+        <div class="t-info">
+          <span class="t-title">${t.title}</span>
+          <div class="t-meta">
+            <span>Due: ${t.due || 'No date'}</span> • <span>${assigneeName}</span>
+          </div>
+        </div>
+        <span class="t-status s-${t.status}">${t.status.replace('-', ' ')}</span>
+      `;
+      list.appendChild(item);
+    });
   }
 
-  const recent = [...state.tasks].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 4);
-  recent.forEach((t) => {
-    const item = document.createElement('div');
-    item.className = 'task-list-item';
-    const assigneeName = t.assignee ? t.assignee.name : 'Unassigned';
-    
-    item.innerHTML = `
-      <div class="t-info">
-        <span class="t-title">${t.title}</span>
-        <div class="t-meta">
-          <span>Due: ${t.due || 'No date'}</span> • <span>${assigneeName}</span>
-        </div>
-      </div>
-      <span class="t-status s-${t.status}">${t.status.replace('-', ' ')}</span>
-    `;
-    list.appendChild(item);
-  });
+  // Render Dashboard Chart
+  const ctx = document.getElementById('statusChart');
+  if (ctx && typeof Chart !== 'undefined') {
+    if (window.statusChartInstance) {
+      window.statusChartInstance.destroy();
+    }
+    const todo = state.tasks.filter(t => t.status === 'todo').length;
+    const inProgress = state.tasks.filter(t => t.status === 'in-progress').length;
+    const done = state.tasks.filter(t => t.status === 'done').length;
+
+    window.statusChartInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['To Do', 'In Progress', 'Done'],
+        datasets: [{
+          data: [todo, inProgress, done],
+          backgroundColor: ['#4b5563', '#3b82f6', '#10b981'],
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: state.theme === 'dark' ? '#fff' : '#000' } }
+        }
+      }
+    });
+  }
 }
 
 function renderProjects(filter = 'all') {

@@ -1,22 +1,45 @@
-# TASKFLOW - Premium Team Task Manager 🚀
+<div align="center">
+  <h1>🚀 TaskFlow</h1>
+  <p><strong>Premium Team Task Manager with Glassmorphism UI & Role-Based Access</strong></p>
+  
+  [![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen.svg)](#)
+  [![Node.js](https://img.shields.io/badge/Node.js-18.x-green.svg)](#)
+  [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-blue.svg)](#)
+</div>
 
-TaskFlow is a **Full-Stack (MERN)** project designed for modern teams, built with a premium dark aesthetic, high-end microinteractions, and secure role-based access control.
+---
+
+## 📸 Screenshots
+*(Add your screenshots here)*
+- **Dashboard:** `[Link to screenshot]`
+- **Kanban Board:** `[Link to screenshot]`
 
 ## 🌟 Key Features
-- **Frontend**: Vanilla JS + CSS (Glassmorphism, 3D Hover Tilt, Ripple Effects, Confetti)
+- **Frontend**: Vanilla JS + CSS (Glassmorphism, 3D Hover Tilt, Ripple Effects, Chart.js)
 - **Backend**: Node.js + Express.js REST API
 - **Database**: MongoDB + Mongoose
-- **Authentication**: Secure JWT (JSON Web Tokens) & `bcryptjs` password hashing
+- **Authentication**: Secure JWT & `bcryptjs`
 - **Role-Based Access**: 
-  - **Admin**: Can create tasks, manage all projects, view team members, and access all analytics.
-  - **Member**: Can only view and manage tasks assigned explicitly to them.
+  - **Admin**: Full access (manage projects, tasks, team).
+  - **Member**: Limited access (only manage assigned tasks).
 
-## 🛠️ Tech Stack
-- HTML5, CSS3, JavaScript (Frontend)
-- Anime.js (Smooth UI transitions & counters)
-- Three.js & Canvas-Confetti (3D Particles & rewards)
-- Node.js & Express.js (REST API Server)
-- MongoDB Atlas (Cloud Database)
+## 🛠️ API Documentation
+
+### Auth
+- `POST /api/auth/register` - Create a new account
+- `POST /api/auth/login` - Authenticate user
+
+### Projects (Admin Only)
+- `GET /api/projects` - Get all projects
+- `POST /api/projects` - Create a project
+- `PUT /api/projects/:id` - Update a project
+- `DELETE /api/projects/:id` - Delete a project
+
+### Tasks
+- `GET /api/tasks` - Get tasks (Filtered by user role)
+- `POST /api/tasks` - Create a task
+- `PUT /api/tasks/:id` - Update task (Admin or Assigned User)
+- `DELETE /api/tasks/:id` - Delete task (Admin Only)
 
 ---
 
@@ -28,15 +51,15 @@ TaskFlow is a **Full-Stack (MERN)** project designed for modern teams, built wit
    ```
 
 2. **Database Setup**
-   Create a `.env` file in the root directory and add your MongoDB Atlas Connection String:
+   Create a `.env` file in the root directory:
    ```env
-   MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/taskflow?retryWrites=true&w=majority
+   MONGODB_URI=your_mongodb_connection_string
    JWT_SECRET=super_secret_key_123
    ```
 
-3. **Start the Server**
+3. **Start the Development Server**
    ```bash
-   npm start
+   npm run dev
    ```
 
 4. **View the App**
@@ -44,26 +67,11 @@ TaskFlow is a **Full-Stack (MERN)** project designed for modern teams, built wit
 
 ---
 
-## 🌍 How to Deploy (Render.com - Free)
-To get your **Live URL** for the assignment submission, follow these exact steps:
-
+## 🌍 How to Deploy (Render.com)
 1. Create a free account on [Render.com](https://render.com).
-2. Click **New +** and select **Web Service**.
-3. Connect your GitHub account and select this `TASKFLOW` repository.
-4. Render will auto-detect Node.js. Use these settings:
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-5. Scroll down to **Environment Variables** and add two keys:
-   - `MONGODB_URI` ➔ (Paste your MongoDB Atlas URL here)
-   - `JWT_SECRET` ➔ (Type any random secret text like `my_secure_jwt_key`)
-6. Click **Create Web Service**. 
-7. Wait 2-3 minutes. Render will give you a live URL (e.g., `https://taskflow-xyz.onrender.com`). **Copy this URL for your assignment submission!**
-
----
-
-## 🔒 Default Accounts (Once DB is connected)
-You can register new accounts, but here is a typical setup:
-- **Admin**: Create an account with Role: `Admin` (Full Access)
-- **Member**: Create an account with Role: `Member` (Limited Access)
+2. Create a new **Web Service** and connect this GitHub repo.
+3. Use `npm install` for Build Command and `npm start` for Start Command.
+4. Add `MONGODB_URI` and `JWT_SECRET` in **Environment Variables**.
+5. Deploy and get your live URL!
 
 *Designed & Built for Premium Productivity.*

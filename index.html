@@ -267,14 +267,8 @@
         <div class="analytics-grid">
           <div class="dash-card">
             <div class="card-header"><h2>Task Status Breakdown</h2></div>
-            <div class="donut-chart-wrap">
-              <div class="donut-chart" id="donutChart">
-                <div class="donut-center">
-                  <span id="donutTotal">0</span>
-                  <small>Total</small>
-                </div>
-              </div>
-              <div class="donut-legend" id="donutLegend"></div>
+            <div class="donut-chart-wrap" style="height: 300px; display: flex; justify-content: center; align-items: center;">
+              <canvas id="statusChart"></canvas>
             </div>
           </div>
           <div class="dash-card">
@@ -395,6 +389,7 @@
 
   <div class="toast-container" id="toastContainer"></div>
 
-  <script src="app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="app.js" defer></script>
 </body>
 </html>

@@ -103,47 +103,60 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.get('/api/users', auth, adminCheck, async (req, res) => {
-  const users = await User.find().select('-password');
-  res.json(users);
+  try {
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (err) { res.status(500).json({ msg: 'Server error' }); }
 });
 
 app.get('/api/projects', auth, async (req, res) => {
-  const projects = await Project.find().sort({ createdAt: -1 });
-  res.json(projects);
+  try {
+    const projects = await Project.find().sort({ createdAt: -1 });
+    res.json(projects);
+  } catch (err) { res.status(500).json({ msg: 'Server error' }); }
 });
 
 app.post('/api/projects', auth, adminCheck, async (req, res) => {
-  const newProject = new Project(req.body);
-  await newProject.save();
-  res.json(newProject);
+  try {
+    const newProject = new Project(req.body);
+    await newProject.save();
+    res.json(newProject);
+  } catch (err) { res.status(500).json({ msg: 'Server error' }); }
 });
 
 app.put('/api/projects/:id', auth, adminCheck, async (req, res) => {
-  const project = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
-  res.json(project);
+  try {
+    const project = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(project);
+  } catch (err) { res.status(500).json({ msg: 'Server error' }); }
 });
 
 app.delete('/api/projects/:id', auth, adminCheck, async (req, res) => {
-  await Project.findByIdAndDelete(req.params.id);
-  // Also delete tasks associated with this project
-  await Task.deleteMany({ projectId: req.params.id });
-  res.json({ msg: 'Project deleted' });
+  try {
+    await Project.findByIdAndDelete(req.params.id);
+    await Task.deleteMany({ projectId: req.params.id });
+    res.json({ msg: 'Project deleted' });
+  } catch (err) { res.status(500).json({ msg: 'Server error' }); }
 });
 
 app.get('/api/tasks', auth, async (req, res) => {
-  let query = {};
-  if (req.user.role !== 'admin') {
-    query.assignee = req.user.id;
-  }
-  const tasks = await Task.find(query).populate('projectId').populate('assignee', 'name email');
-  res.json(tasks);
+  try {
+    let query = {};
+    if (req.user.role !== 'admin') {
+      query.assignee = req.user.id;
+    }
+    const tasks = await Task.find(query).populate('projectId').populate('assignee', 'name email');
+    res.json(tasks);
+  } catch (err) { res.status(500).json({ msg: 'Server error' }); }
 });
 
 app.post('/api/tasks', auth, async (req, res) => {
-  const task = new Task(req.body);
-  await task.save();
-  const populatedTask = await Task.findById(task._id).populate('projectId').populate('assignee', 'name email');
-  res.json(populatedTask);
+  try {
+    const task = new Task(req.body);
+    await task.save();
+    const populatedTask = await Task.findById(task._id).populate('projectId').populate('assignee', 'name email');
+    res.json(populatedTask);
+  } catch (err) { res.status(500).json({ msg: 'Server error' }); }
 });
 
 app.put('/api/tasks/:id', auth, async (req, res) => {
@@ -166,8 +179,10 @@ app.put('/api/tasks/:id', auth, async (req, res) => {
 });
 
 app.delete('/api/tasks/:id', auth, adminCheck, async (req, res) => {
-  await Task.findByIdAndDelete(req.params.id);
-  res.json({ msg: 'Task deleted' });
+  try {
+    await Task.findByIdAndDelete(req.params.id);
+    res.json({ msg: 'Task deleted' });
+  } catch (err) { res.status(500).json({ msg: 'Server error' }); }
 });
 
 
