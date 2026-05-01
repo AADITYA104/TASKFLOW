@@ -11,9 +11,12 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 // DB connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/taskflow';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/taskflow';
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('DB connected'))
+  .then(() => {
+    console.log('DB connected');
+    seedDatabase();
+  })
   .catch(err => console.error('DB error', err));
 
 // Schemas
@@ -47,6 +50,38 @@ const taskSchema = new mongoose.Schema({
 const User = mongoose.model('User', userSchema);
 const Project = mongoose.model('Project', projectSchema);
 const Task = mongoose.model('Task', taskSchema);
+
+// Database Seed Logic
+async function seedDatabase() {
+  try {
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      console.log('Seeding initial data...');
+      const salt = await bcrypt.genSalt(10);
+      const adminPassword = await bcrypt.hash('admin123', salt);
+      const memberPassword = await bcrypt.hash('member123', salt);
+
+      const admin = await User.create({ name: 'Admin User', email: 'admin@taskflow.io', password: adminPassword, role: 'admin' });
+      const member = await User.create({ name: 'Member User', email: 'member@taskflow.io', password: memberPassword, role: 'member' });
+
+      const p1 = await Project.create({ name: 'Website Redesign', desc: 'Overhaul of our main landing page and dashboard.', color: '#ec4899', due: '2026-12-31' });
+      const p2 = await Project.create({ name: 'Mobile App V2', desc: 'React Native mobile application launch.', color: '#3b82f6', due: '2026-10-15' });
+      const p3 = await Project.create({ name: 'Marketing Campaign', desc: 'Q3 marketing materials and ads.', color: '#10b981', due: '2026-08-01' });
+
+      await Task.create([
+        { title: 'Design Mockups', desc: 'Create Figma designs for the new dashboard.', projectId: p1._id, priority: 'high', status: 'done', assignee: admin._id, due: '2026-06-01' },
+        { title: 'Frontend Implementation', desc: 'Convert designs to React components.', projectId: p1._id, priority: 'high', status: 'in-progress', assignee: member._id, due: '2026-06-15' },
+        { title: 'API Integration', desc: 'Connect frontend to the new GraphQL API.', projectId: p1._id, priority: 'medium', status: 'todo', assignee: member._id, due: '2026-07-01' },
+        { title: 'Setup CI/CD', desc: 'Configure GitHub Actions for mobile app.', projectId: p2._id, priority: 'medium', status: 'done', assignee: admin._id, due: '2026-05-15' },
+        { title: 'App Store Assets', desc: 'Design screenshots and icons for App Store.', projectId: p2._id, priority: 'low', status: 'todo', assignee: member._id, due: '2026-09-01' },
+        { title: 'Ad Copywriting', desc: 'Write 5 variations of ad copy for Facebook.', projectId: p3._id, priority: 'medium', status: 'todo', assignee: member._id, due: '2026-07-15' }
+      ]);
+      console.log('Database seeded successfully.');
+    }
+  } catch (err) {
+    console.error('Seeding error:', err);
+  }
+}
 
 // Middleware
 const auth = (req, res, next) => {
