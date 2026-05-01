@@ -102,7 +102,7 @@
           <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
           <span>Dashboard</span>
         </a>
-        <a href="#" class="nav-item" data-page="projects" onclick="navigate('projects', this)">
+        <a href="#" class="nav-item admin-only hidden" data-page="projects" onclick="navigate('projects', this)">
           <svg viewBox="0 0 24 24"><path d="M2 6a2 2 0 012-2h5l2 2h9a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
           <span>Projects</span>
           <span class="nav-badge" id="projectsBadge">0</span>
@@ -164,7 +164,7 @@
 
       <div class="page active" id="page-dashboard">
         <div class="stats-grid" id="statsGrid">
-          <div class="stat-card" data-index="0">
+          <div class="stat-card admin-only hidden" data-index="0">
             <div class="stat-icon purple"><svg viewBox="0 0 24 24"><path d="M2 6a2 2 0 012-2h5l2 2h9a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg></div>
             <div class="stat-info">
               <div class="stat-value" id="totalProjects">0</div>
@@ -370,6 +370,42 @@
       <div class="modal-footer">
         <button class="btn-ghost" onclick="closeModal('projectModalOverlay')">Cancel</button>
         <button class="btn-primary" onclick="saveProject()">Create Project</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="inviteModalOverlay">
+    <div class="modal" id="inviteModal">
+      <div class="modal-header">
+        <h3>Invite Team Member</h3>
+        <button class="modal-close" onclick="closeModal('inviteModalOverlay')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" id="inviteName" class="form-input" placeholder="e.g. Jane Smith" />
+        </div>
+        <div class="form-group">
+          <label>Email Address *</label>
+          <input type="email" id="inviteEmail" class="form-input" placeholder="jane@company.com" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Temporary Password *</label>
+            <input type="text" id="invitePassword" class="form-input" value="Welcome123" />
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <select id="inviteRole" class="form-input">
+              <option value="member" selected>Member</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="closeModal('inviteModalOverlay')">Cancel</button>
+        <button class="btn-primary" onclick="sendInvite()">Send Invite</button>
       </div>
     </div>
   </div>

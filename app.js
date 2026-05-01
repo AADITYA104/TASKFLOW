@@ -661,3 +661,38 @@ function renderTeam() {
     </div>
   `).join('');
 }
+
+function openInviteModal() {
+  document.getElementById('inviteName').value = '';
+  document.getElementById('inviteEmail').value = '';
+  document.getElementById('invitePassword').value = 'Welcome123';
+  openModal('inviteModalOverlay');
+}
+
+async function sendInvite() {
+  const name = document.getElementById('inviteName').value;
+  const email = document.getElementById('inviteEmail').value;
+  const password = document.getElementById('invitePassword').value;
+  const role = document.getElementById('inviteRole').value;
+  
+  if (!name || !email || !password) return showToast('All fields required!');
+  
+  try {
+    // Calling the register API to create a new user from Admin panel
+    await apiCall('/auth/register', 'POST', { name, email, password, role });
+    
+    // Refresh team list
+    state.team = await apiCall('/users');
+    renderTeam();
+    
+    closeModal('inviteModalOverlay');
+    showToast(`Successfully invited ${name} as ${role}!`);
+  } catch (err) {
+    if (err.message === 'User exists') {
+      showToast('A user with that email already exists.');
+    } else {
+      showToast('Error inviting member: ' + err.message);
+    }
+  }
+}
+

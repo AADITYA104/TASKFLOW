@@ -67,6 +67,8 @@ async function seedDatabase() {
       const p1 = await Project.create({ name: 'Website Redesign', desc: 'Overhaul of our main landing page and dashboard.', color: '#ec4899', due: '2026-12-31' });
       const p2 = await Project.create({ name: 'Mobile App V2', desc: 'React Native mobile application launch.', color: '#3b82f6', due: '2026-10-15' });
       const p3 = await Project.create({ name: 'Marketing Campaign', desc: 'Q3 marketing materials and ads.', color: '#10b981', due: '2026-08-01' });
+      const p4 = await Project.create({ name: 'Security Audit', desc: 'Comprehensive penetration testing and fixes.', color: '#f59e0b', due: '2026-06-30' });
+      const p5 = await Project.create({ name: 'Cloud Migration', desc: 'Moving from local servers to AWS infrastructure.', color: '#8b5cf6', due: '2027-01-20' });
 
       await Task.create([
         { title: 'Design Mockups', desc: 'Create Figma designs for the new dashboard.', projectId: p1._id, priority: 'high', status: 'done', assignee: admin._id, due: '2026-06-01' },
@@ -74,7 +76,13 @@ async function seedDatabase() {
         { title: 'API Integration', desc: 'Connect frontend to the new GraphQL API.', projectId: p1._id, priority: 'medium', status: 'todo', assignee: member._id, due: '2026-07-01' },
         { title: 'Setup CI/CD', desc: 'Configure GitHub Actions for mobile app.', projectId: p2._id, priority: 'medium', status: 'done', assignee: admin._id, due: '2026-05-15' },
         { title: 'App Store Assets', desc: 'Design screenshots and icons for App Store.', projectId: p2._id, priority: 'low', status: 'todo', assignee: member._id, due: '2026-09-01' },
-        { title: 'Ad Copywriting', desc: 'Write 5 variations of ad copy for Facebook.', projectId: p3._id, priority: 'medium', status: 'todo', assignee: member._id, due: '2026-07-15' }
+        { title: 'Push Notifications', desc: 'Integrate Firebase push notifications.', projectId: p2._id, priority: 'high', status: 'in-progress', assignee: admin._id, due: '2026-08-10' },
+        { title: 'Ad Copywriting', desc: 'Write 5 variations of ad copy for Facebook.', projectId: p3._id, priority: 'medium', status: 'todo', assignee: member._id, due: '2026-07-15' },
+        { title: 'Video Production', desc: 'Shoot promotional video for Q3.', projectId: p3._id, priority: 'high', status: 'in-progress', assignee: admin._id, due: '2026-07-20' },
+        { title: 'Vulnerability Scan', desc: 'Run automated scanning tools.', projectId: p4._id, priority: 'high', status: 'done', assignee: admin._id, due: '2026-05-10' },
+        { title: 'Patch Dependencies', desc: 'Update all npm packages to latest secure versions.', projectId: p4._id, priority: 'medium', status: 'todo', assignee: member._id, due: '2026-06-05' },
+        { title: 'AWS Account Setup', desc: 'Create IAM roles and configure billing.', projectId: p5._id, priority: 'low', status: 'done', assignee: admin._id, due: '2026-04-30' },
+        { title: 'Database Migration', desc: 'Export and import MongoDB data to Atlas.', projectId: p5._id, priority: 'high', status: 'todo', assignee: admin._id, due: '2026-11-15' },
       ]);
       console.log('Database seeded successfully.');
     }
