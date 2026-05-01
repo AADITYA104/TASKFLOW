@@ -11,6 +11,7 @@ const API_URL = '/api';
 
 document.addEventListener('DOMContentLoaded', () => {
   initCursor();
+  initThreeJSBg();
   
   const savedTheme = localStorage.getItem('tf-theme');
   if (savedTheme) {
@@ -28,10 +29,50 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// --- 3D Background Particles (Three.js) ---
+let bgScene, bgCamera, bgRenderer, bgParticles;
+function initThreeJSBg() {
+  const canvas = document.getElementById('bgCanvas');
+  if (!canvas || typeof THREE === 'undefined') return;
+
+  bgScene = new THREE.Scene();
+  bgCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  bgRenderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  bgRenderer.setSize(window.innerWidth, window.innerHeight);
+
+  const geometry = new THREE.BufferGeometry();
+  const particlesCount = 300;
+  const posArray = new Float32Array(particlesCount * 3);
+
+  for(let i = 0; i < particlesCount * 3; i++) {
+    posArray[i] = (Math.random() - 0.5) * 10;
+  }
+  
+  geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+  const material = new THREE.PointsMaterial({ size: 0.05, color: 0x7c3aed, transparent: true, opacity: 0.6 });
+  
+  bgParticles = new THREE.Points(geometry, material);
+  bgScene.add(bgParticles);
+  bgCamera.position.z = 3;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    bgParticles.rotation.y += 0.001;
+    bgParticles.rotation.x += 0.0005;
+    bgRenderer.render(bgScene, bgCamera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    bgCamera.aspect = window.innerWidth / window.innerHeight;
+    bgCamera.updateProjectionMatrix();
+    bgRenderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
 function initCursor() {
   const cursor = document.getElementById('cursor');
   const follower = document.getElementById('cursorFollower');
-  
   if (!cursor || !follower) return;
 
   document.addEventListener('mousemove', (e) => {
@@ -48,11 +89,6 @@ function initCursor() {
       });
     }
   });
-}
-
-function fillDemo(email, pass) {
-  document.getElementById('loginEmail').value = email;
-  document.getElementById('loginPassword').value = pass;
 }
 
 function switchToRegister() {
@@ -128,7 +164,7 @@ async function handleRegister() {
   }
 }
 
-async function loginSuccess() {
+function loginSuccess() {
   if (typeof anime !== 'undefined') {
     anime({
       targets: '#authOverlay',
@@ -160,7 +196,7 @@ function logout() {
 
 async function initApp() {
   document.getElementById('userName').textContent = state.user.name;
-  document.getElementById('userAvatar').textContent = state.user.name.charAt(0);
+  document.getElementById('userAvatar').textContent = state.user.name.charAt(0).toUpperCase();
   document.getElementById('userRoleBadge').textContent = state.user.role;
   
   const adminEls = document.querySelectorAll('.admin-only');
@@ -181,10 +217,13 @@ async function loadData() {
       apiCall('/tasks')
     ]);
     state.projects = projects;
-    state.tasks = tasks;
     
+    // Server already filters for Member vs Admin, but just in case we enforce frontend filter
     if (state.user.role === 'admin') {
+      state.tasks = tasks;
       state.team = await apiCall('/users');
+    } else {
+      state.tasks = tasks.filter(t => t.assignee && t.assignee._id === state.user.id);
     }
     updateBadges();
   } catch (err) {
@@ -207,7 +246,20 @@ function navigate(pageId, navItem) {
   document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
   
   const target = document.getElementById(`page-${pageId}`);
-  if (target) target.classList.remove('hidden');
+  if (target) {
+    target.classList.remove('hidden');
+    // GSAP-style Page Flip Animation using Anime.js
+    if (typeof anime !== 'undefined') {
+      anime({
+        targets: target,
+        rotateX: [10, 0],
+        opacity: [0, 1],
+        translateY: [20, 0],
+        duration: 600,
+        easing: 'easeOutElastic(1, .8)'
+      });
+    }
+  }
   
   const titles = { dashboard: 'Dashboard', projects: 'Projects', tasks: 'My Tasks', team: 'Team', analytics: 'Analytics' };
   document.getElementById('pageTitle').textContent = titles[pageId] || 'TaskFlow';
@@ -216,16 +268,6 @@ function navigate(pageId, navItem) {
   if (pageId === 'projects') renderProjects();
   if (pageId === 'tasks') renderKanban();
   if (pageId === 'team' && state.user.role === 'admin') renderTeam();
-  
-  if (typeof anime !== 'undefined' && target) {
-    anime({
-      targets: target,
-      opacity: [0, 1],
-      translateY: [10, 0],
-      duration: 500,
-      easing: 'easeOutCubic'
-    });
-  }
 }
 
 function toggleTheme() {
@@ -241,16 +283,40 @@ function renderDashboard() {
   const completed = state.tasks.filter(t => t.status === 'done').length;
   document.getElementById('completedTasks').textContent = completed;
   
-  const today = new Date().toISOString().split('T')[0];
-  const overdue = state.tasks.filter(t => t.status !== 'done' && t.due < today).length;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const overdue = state.tasks.filter(t => {
+    if (t.status === 'done' || !t.due) return false;
+    return new Date(t.due) < today;
+  }).length;
   document.getElementById('overdueTasks').textContent = overdue;
+
+  // Stat numbers Count-Up Animation
+  if (typeof anime !== 'undefined') {
+    anime({
+      targets: '.stat-value',
+      innerHTML: [0, function(el) { return parseInt(el.textContent) || 0; }],
+      round: 1,
+      easing: 'easeOutExpo',
+      duration: 1500
+    });
+  }
 
   const list = document.getElementById('recentTasksList');
   if (!list) return;
   list.innerHTML = '';
   
+  if (state.tasks.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <h3>No tasks yet</h3>
+        <p>Create your first task to get started.</p>
+      </div>`;
+    return;
+  }
+
   const recent = [...state.tasks].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 4);
-  
   recent.forEach((t) => {
     const item = document.createElement('div');
     item.className = 'task-list-item';
@@ -277,6 +343,16 @@ function renderProjects(filter = 'all') {
   let projs = state.projects;
   if(filter !== 'all') projs = projs.filter(p => p.status === filter);
   
+  if (projs.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6a2 2 0 012-2h5l2 2h9a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/></svg>
+        <h3>No projects found</h3>
+        <p>Create a new project to organize your team's work.</p>
+      </div>`;
+    return;
+  }
+
   projs.forEach(p => {
     const taskCount = state.tasks.filter(t => t.projectId && t.projectId._id === p._id).length;
     const card = document.createElement('div');
@@ -302,11 +378,19 @@ function filterProjects(status, btn) {
   renderProjects(status);
 }
 
-function renderKanban() {
+function renderKanban(filter = 'all') {
   const cols = { 'todo': [], 'in-progress': [], 'done': [] };
   
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   state.tasks.forEach(t => {
-    if(cols[t.status]) cols[t.status].push(t);
+    let show = false;
+    if (filter === 'all') show = true;
+    else if (filter === 'overdue') show = t.status !== 'done' && t.due && new Date(t.due) < today;
+    else if (t.status === filter) show = true;
+
+    if (show && cols[t.status]) cols[t.status].push(t);
   });
   
   ['todo', 'in-progress', 'done'].forEach(status => {
@@ -323,7 +407,22 @@ function renderKanban() {
       card.id = `task-${t._id}`;
       card.ondragstart = (e) => drag(e, t._id);
       
-      const assigneeName = t.assignee ? t.assignee.name.charAt(0) : '?';
+      // 3D Hover Tilt Effect
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -10;
+        const rotateY = ((x - centerX) / centerX) * 10;
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+      });
+
+      const assigneeName = t.assignee ? t.assignee.name.charAt(0).toUpperCase() : '?';
       
       card.innerHTML = `
         <div class="k-tags">
@@ -344,7 +443,7 @@ function renderKanban() {
 function filterTasks(status, btn) {
   document.querySelectorAll('#page-tasks .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  renderKanban();
+  renderKanban(status);
 }
 
 function allowDrop(ev) {
@@ -365,6 +464,16 @@ async function dropTask(ev, newStatus) {
     task.status = newStatus;
     renderKanban(); 
     
+    // Confetti effect if moved to done
+    if (newStatus === 'done' && typeof confetti !== 'undefined') {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#7c3aed', '#10b981', '#3b82f6']
+      });
+    }
+
     try {
       await apiCall(`/tasks/${taskId}`, 'PUT', { status: newStatus });
       renderDashboard();
@@ -401,10 +510,21 @@ async function openTaskModal() {
   pSelect.innerHTML = state.projects.map(p => `<option value="${p._id}">${p.name}</option>`).join('');
   
   const aSelect = document.getElementById('taskAssignee');
+  // Load real team members into dropdown
   if (state.user.role === 'admin' && state.team.length > 0) {
     aSelect.innerHTML = state.team.map(u => `<option value="${u._id}">${u.name}</option>`).join('');
   } else {
-    aSelect.innerHTML = `<option value="${state.user.id}">${state.user.name}</option>`;
+    // If team is not loaded, try to fetch it
+    try {
+      if (state.user.role === 'admin') {
+        state.team = await apiCall('/users');
+        aSelect.innerHTML = state.team.map(u => `<option value="${u._id}">${u.name}</option>`).join('');
+      } else {
+        aSelect.innerHTML = `<option value="${state.user.id}">${state.user.name}</option>`;
+      }
+    } catch(e) {
+      aSelect.innerHTML = `<option value="${state.user.id}">${state.user.name}</option>`;
+    }
   }
   
   document.getElementById('taskTitle').value = '';
@@ -477,7 +597,7 @@ function renderTeam() {
   grid.innerHTML = state.team.map(u => `
     <div class="dash-card">
       <div class="user-card">
-        <div class="user-avatar" style="width:48px;height:48px;font-size:1.2rem">${u.name.charAt(0)}</div>
+        <div class="user-avatar" style="width:48px;height:48px;font-size:1.2rem">${u.name.charAt(0).toUpperCase()}</div>
         <div class="user-info">
           <span class="user-name" style="font-size:1rem">${u.name}</span>
           <span class="user-role">${u.role}</span>
