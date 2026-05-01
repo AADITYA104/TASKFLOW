@@ -118,6 +118,18 @@ app.post('/api/projects', auth, adminCheck, async (req, res) => {
   res.json(newProject);
 });
 
+app.put('/api/projects/:id', auth, adminCheck, async (req, res) => {
+  const project = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  res.json(project);
+});
+
+app.delete('/api/projects/:id', auth, adminCheck, async (req, res) => {
+  await Project.findByIdAndDelete(req.params.id);
+  // Also delete tasks associated with this project
+  await Task.deleteMany({ projectId: req.params.id });
+  res.json({ msg: 'Project deleted' });
+});
+
 app.get('/api/tasks', auth, async (req, res) => {
   let query = {};
   if (req.user.role !== 'admin') {
@@ -135,10 +147,22 @@ app.post('/api/tasks', auth, async (req, res) => {
 });
 
 app.put('/api/tasks/:id', auth, async (req, res) => {
-  const task = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true })
-    .populate('projectId')
-    .populate('assignee', 'name email');
-  res.json(task);
+  try {
+    const task = await Task.findById(req.params.id);
+    if (!task) return res.status(404).json({ msg: 'Task not found' });
+
+    // Security fix: Only admin or the assigned user can update the task
+    if (req.user.role !== 'admin' && task.assignee.toString() !== req.user.id) {
+      return res.status(403).json({ msg: 'Not authorized to update this task' });
+    }
+
+    const updatedTask = await Task.findByIdAndUpdate(req.params.id, req.body, { new: true })
+      .populate('projectId')
+      .populate('assignee', 'name email');
+    res.json(updatedTask);
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
 });
 
 app.delete('/api/tasks/:id', auth, adminCheck, async (req, res) => {
