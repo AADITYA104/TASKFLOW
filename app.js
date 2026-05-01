@@ -7,11 +7,12 @@ let state = {
   team: []
 };
 
-const API_URL = '/api';
+const API_URL = 'http://localhost:3000/api';
 
 document.addEventListener('DOMContentLoaded', () => {
   initCursor();
   initThreeJSBg();
+  initRipples();
   
   const savedTheme = localStorage.getItem('tf-theme');
   if (savedTheme) {
@@ -88,6 +89,32 @@ function initCursor() {
         easing: 'easeOutExpo'
       });
     }
+  });
+}
+
+function initRipples() {
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.btn-primary, .btn-secondary, .login-btn, .k-card, .project-card, .stat-card');
+    if (!btn) return;
+    
+    const circle = document.createElement("span");
+    circle.classList.add("ripple-circle");
+    
+    const rect = btn.getBoundingClientRect();
+    const diameter = Math.max(rect.width, rect.height);
+    
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${e.clientX - rect.left - diameter / 2}px`;
+    circle.style.top = `${e.clientY - rect.top - diameter / 2}px`;
+    
+    // Ensure the button has relative positioning and hidden overflow
+    if (getComputedStyle(btn).position === 'static') {
+      btn.style.position = 'relative';
+    }
+    btn.style.overflow = 'hidden';
+    
+    btn.appendChild(circle);
+    setTimeout(() => circle.remove(), 500);
   });
 }
 
