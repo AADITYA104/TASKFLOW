@@ -18,25 +18,19 @@
     <canvas id="bgCanvas"></canvas>
     <div class="auth-container">
       <div class="auth-left">
-        <div class="auth-left-shapes">
-          <div class="shape shape-1"></div>
-          <div class="shape shape-2"></div>
-          <div class="shape shape-3"></div>
-          <div class="shape shape-4"></div>
-          <div class="shape shape-5"></div>
-          <div class="glow-orb orb-1"></div>
-          <div class="glow-orb orb-2"></div>
-        </div>
         <div class="auth-left-content">
-          <div class="auth-logo-3d">TF</div>
+          <div class="auth-logo-mark">TF</div>
           <h1 class="auth-hero-title">TaskFlow</h1>
-          <p class="auth-hero-sub">Where teams build<br/>extraordinary things.</p>
+          <p class="auth-hero-sub">Project management<br>for modern teams.</p>
           <div class="auth-stats-row">
-            <div class="auth-mini-stat"><span class="ams-value">5K+</span><span class="ams-label">Teams</span></div>
-            <div class="auth-mini-stat"><span class="ams-value">50K+</span><span class="ams-label">Tasks Done</span></div>
-            <div class="auth-mini-stat"><span class="ams-value">99%</span><span class="ams-label">Uptime</span></div>
+            <div class="auth-mini-stat"><strong>5K+</strong><span>Teams</span></div>
+            <div class="auth-stat-sep"></div>
+            <div class="auth-mini-stat"><strong>50K+</strong><span>Tasks</span></div>
+            <div class="auth-stat-sep"></div>
+            <div class="auth-mini-stat"><strong>99.9%</strong><span>Uptime</span></div>
           </div>
         </div>
+        <p class="auth-left-footer">Trusted by teams at startups and enterprises.</p>
       </div>
       <div class="auth-right">
         <div class="auth-card" id="authCard">
@@ -58,16 +52,10 @@
             </button>
             <p class="auth-switch">Don't have an account? <a href="#" onclick="switchToRegister(); return false;">Create one</a></p>
             <div class="demo-accounts">
-              <p class="demo-heading">Quick Demo Access</p>
+              <p class="demo-heading">Try a demo account</p>
               <div class="demo-btn-group">
-                <button type="button" class="demo-btn" onclick="fillDemo('admin@taskflow.io','admin123')">
-                  <span class="demo-emoji">👑</span>
-                  <span class="demo-label">Admin</span>
-                </button>
-                <button type="button" class="demo-btn" onclick="fillDemo('member@taskflow.io','member123')">
-                  <span class="demo-emoji">👤</span>
-                  <span class="demo-label">Member</span>
-                </button>
+                <button type="button" class="demo-btn" onclick="fillDemo('admin@taskflow.io','admin123')">Admin access</button>
+                <button type="button" class="demo-btn" onclick="fillDemo('member@taskflow.io','member123')">Member access</button>
               </div>
             </div>
           </div>
