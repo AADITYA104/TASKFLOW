@@ -1,7 +1,7 @@
 {
   "name": "taskflow",
   "version": "1.0.0",
-  "description": "Team Task Manager with Premium Dark Aesthetic, Animations, and Role-Based Access.",
+  "description": "Team Task Manager",
   "main": "server.js",
   "engines": {
     "node": ">=18.0.0"
