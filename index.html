@@ -179,9 +179,34 @@
             <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.65rem; color: var(--text-tertiary); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-subtle); pointer-events: none;">⌘K</span>
           </div>
           <button type="button" class="btn-primary small" id="quickAddBtn" onclick="openTaskModal()">+ New Task</button>
-          <div class="notification-btn">
-            <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
-            <span class="notif-dot"></span>
+          <div class="notif-wrap" id="notifWrap">
+            <div class="notification-btn" id="notifBtn" onclick="toggleNotifDropdown()" title="Notifications">
+              <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+              <span class="notif-dot" id="notifDot"></span>
+            </div>
+            <div class="notif-dropdown hidden" id="notifDropdown">
+              <div class="notif-header">
+                <h4>Notifications</h4>
+                <button class="notif-clear" onclick="clearNotifications()">Mark all read</button>
+              </div>
+              <div class="notif-list" id="notifList">
+                <div class="notif-item">
+                  <div class="notif-icon green"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+                  <div class="notif-text"><strong>Task completed</strong><span>Design System Update marked done</span></div>
+                </div>
+                <div class="notif-item">
+                  <div class="notif-icon blue"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/></svg></div>
+                  <div class="notif-text"><strong>New member joined</strong><span>Team Member added to workspace</span></div>
+                </div>
+                <div class="notif-item">
+                  <div class="notif-icon purple"><svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg></div>
+                  <div class="notif-text"><strong>Project updated</strong><span>Mobile App V2 has a new task</span></div>
+                </div>
+              </div>
+              <div class="notif-footer">
+                <a href="#" onclick="navigate('activity', null); closeNotifDropdown(); return false;">View all activity →</a>
+              </div>
+            </div>
           </div>
         </div>
       </header>

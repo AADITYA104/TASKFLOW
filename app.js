@@ -1,6 +1,7 @@
 let state = { user: null, token: null, theme: 'dark', projects: [], tasks: [], team: [], activities: [] };
 const API = '/api';
 let socket;
+let notifOpen = false;
 
 document.addEventListener('DOMContentLoaded', () => {
   initBgCanvas();
@@ -9,6 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const token = localStorage.getItem('tf-token'), user = localStorage.getItem('tf-user');
   if (token && user) { state.token = token; state.user = JSON.parse(user); loginSuccess(); }
   initKeyboardShortcuts();
+  // Close notif dropdown on outside click
+  document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('notifWrap');
+    if (wrap && !wrap.contains(e.target)) closeNotifDropdown();
+  });
 });
 
 function initBgCanvas() {
@@ -548,9 +554,9 @@ async function saveSettings() {
 
 // Drag & Drop
 function dragTask(e, id) { e.dataTransfer.setData('text', id); }
-function allowDrop(e) { e.preventDefault(); }
 async function dropTask(e, status) {
   e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
   const id = e.dataTransfer.getData('text');
   try {
     await apiCall(`/tasks/${id}`, 'PUT', { status });
@@ -575,8 +581,72 @@ function showToast(msg, isErr=false) {
   const container = document.getElementById('toast-container');
   const t = document.createElement('div');
   t.className = 'toast';
+  t.style.animation = 'toastIn 0.4s cubic-bezier(0.16,1,0.3,1) forwards';
   if (isErr) t.style.borderColor = 'var(--status-overdue)';
   t.textContent = msg;
   container.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+  setTimeout(() => {
+    t.classList.add('removing');
+    setTimeout(() => t.remove(), 300);
+  }, 2700);
+}
+
+// Notification Dropdown
+function toggleNotifDropdown() {
+  const dd = document.getElementById('notifDropdown');
+  const dot = document.getElementById('notifDot');
+  if (!dd) return;
+  notifOpen = !notifOpen;
+  if (notifOpen) {
+    dd.classList.remove('hidden');
+    dot.style.display = 'none'; // clear dot on open
+  } else {
+    dd.classList.add('hidden');
+  }
+}
+
+function closeNotifDropdown() {
+  notifOpen = false;
+  const dd = document.getElementById('notifDropdown');
+  if (dd) dd.classList.add('hidden');
+}
+
+function clearNotifications() {
+  const list = document.getElementById('notifList');
+  if (list) list.innerHTML = '<div class="notif-empty">🎉 You\'re all caught up!</div>';
+  closeNotifDropdown();
+}
+
+// Kanban drag-over highlight
+function allowDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+
+// Filter functions (no-op stubs — all data shown by default)
+function filterProjects(type, el) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const grid = document.getElementById('projectsGrid');
+  if (!grid) return;
+  const cards = grid.querySelectorAll('.project-card, .dash-card');
+  cards.forEach(c => { c.style.display = ''; });
+}
+
+function filterTasks(type, el) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (type === 'all') { renderKanban(); return; }
+  const cols = ['todo','in-progress','done'];
+  cols.forEach(s => {
+    const col = document.getElementById('col-' + s);
+    if (!col) return;
+    if (type !== s) {
+      const parent = col.closest('.kanban-col');
+      if (parent) parent.style.display = 'none';
+    } else {
+      const parent = col.closest('.kanban-col');
+      if (parent) parent.style.display = '';
+    }
+  });
 }
