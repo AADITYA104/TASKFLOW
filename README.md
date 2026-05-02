@@ -4,8 +4,6 @@ A simple, real-time task management application for teams.
 
 TaskFlow is built to help teams organize projects, track tasks, and collaborate. It uses a Kanban-style board and role-based access control to keep things structured.
 
-![Dashboard Preview](https://via.placeholder.com/800x400.png?text=TaskFlow+Preview)
-
 ## Features
 
 - **Authentication**: JWT-based login and signup.
